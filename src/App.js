@@ -1,25 +1,26 @@
-import logo from './logo.svg';
-import './App.css';
+import Router from "./shared/Router";
+import styled from "styled-components";
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Box>
+      <Router />
+    </Box>
   );
 }
 
 export default App;
+
+let Box = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin: 0 auto;
+  width: 390px;
+  height: 100vh;
+  background: #ffffff;
+  box-shadow: 0 0 2rem 0.1rem rgba(0, 0, 0, 0.2);
+  font-family: "Noto Sans KR", sans-serif;
+`;
