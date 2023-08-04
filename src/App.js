@@ -1,3 +1,4 @@
+import React from "react";
 import Router from "./shared/Router";
 import styled from "styled-components";
 
@@ -16,11 +17,11 @@ let Box = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  text-align: center;
+  // text-align: center;
   margin: 0 auto;
   width: 390px;
   height: 100vh;
-  background: #ffffff;
+  background: #fff062;
   box-shadow: 0 0 2rem 0.1rem rgba(0, 0, 0, 0.2);
   font-family: "Noto Sans KR", sans-serif;
 `;

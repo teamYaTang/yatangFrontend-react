@@ -14,6 +14,6 @@ export const createIngredientApi = async (ingredient) => {
 };
 
 // 재료삭제
-export const deleteTodoApi = async (id) => {
+export const deleteIngredientApi = async (id) => {
   return apiClient.delete(`/account/${id}/refrigerator`);
 };
