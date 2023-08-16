@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 
 import { AiOutlineLeft } from "react-icons/ai";
+import { ListItem } from "../components/list";
 
 const Ingredient = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const Ingredient = () => {
   };
 
   const [ingredient, setIngredient] = useState("");
+  const [ingredientList, setIngredientList] = useState("");
 
   const [isResult, setIsResult] = useState(false);
 
@@ -41,7 +43,6 @@ const Ingredient = () => {
         <AiOutlineLeft onClick={naviUndo} />
         <Title>${}의 냉장고</Title>
       </RefrigeratorDes>
-
       <form>
         <Add
           name="ingredient"
@@ -52,6 +53,25 @@ const Ingredient = () => {
           onChange={onChange}
           onKeyUp={onChange}
         ></Add>
+        <AddBtn>추가</AddBtn>
+        <List>
+          {ingredientList?.length === 0 ? (
+            <span>아직 작성된 Todo 리스트가 존재하지 않습니다.</span>
+          ) : (
+            <>
+              {ingredientList?.length &&
+                ingredientList.map((list) => (
+                  <ListItem
+                    IngredientList={list}
+                    key={list.item}
+                    id={list.item}
+                    userId={list.item}
+                  />
+                ))}
+            </>
+          )}
+        </List>
+        <DelBtn>삭제</DelBtn>
       </form>
       <Blank></Blank>
 
@@ -119,6 +139,14 @@ let Add = styled.input`
 
   color: #b7b7b7;
 `;
+
+let AddBtn = styled.div``;
+
+let List = styled.div`
+  margin-top: 1vh;
+`;
+
+let DelBtn = styled.div``;
 
 let Blank = styled.div`
   margin: 3vh;

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 
-const Avata = ({ key, img, com, nickName, isLoggedIn }) => {
+// 냉장고 화면에서 냉장고 재료 보여주는 리스트
+const List = ({ key, img, com, nickName, isLoggedIn }) => {
   const navigate = useNavigate();
 
   const naviInfo = () => {
@@ -26,7 +27,7 @@ const Avata = ({ key, img, com, nickName, isLoggedIn }) => {
   );
 };
 
-export default Avata;
+export default List;
 
 let Con = styled.div`
   display: flex;
