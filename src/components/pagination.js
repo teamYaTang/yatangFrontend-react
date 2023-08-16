@@ -5,6 +5,7 @@ import { AiOutlineLeft, AiOutlineRight } from "react-icons/ai";
 
 import Ingredient from "../components/list";
 
+// 냉장고 화면에서 냉장고 pagination => 이 안에 list로 돌아감..
 const Pagination = ({ avata, myAvata, isLoggedIn }) => {
   const newAvata = {
     ...avata,
