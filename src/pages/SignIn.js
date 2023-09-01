@@ -10,23 +10,32 @@ const SignIn = () => {
   const navigate = useNavigate();
 
   const onSubmit = () => {
-    signin({ id, password })
-      .then((data) => {
-        localStorage.setItem("accessToken", data.accessToken);
-        setAuthorization(data);
+    signin({ userid, userpw })
+      .then(({ userid, userpw }) => {
+        console.log({ userid, userpw });
+
+        alert("성공적으로 로그인 되었습니다.");
+        // localStorage.setItem("accessToken", data.accessToken);
+        // setAuthorization(data);
       })
-      .catch((error) => alert(error.message));
+      .catch((error) => {
+        console.log("error");
+        console.log({ userid, userpw });
+
+        console.log(error);
+        alert(error.message);
+      });
 
     //조건문 추가해서 냉장고로 갈지 닉네임으로 갈지 결정
-    navigate("/refrigerator");
+    // navigate("/refrigerator");
   };
 
   const naviSignUp = () => {
     navigate("/signup");
   };
 
-  const [id, setId] = useState("");
-  const [password, setPassword] = useState("");
+  const [userid, setUserid] = useState("");
+  const [userpw, setUserpw] = useState("");
 
   const [isId, setIsId] = useState(false);
   const [isPassword, setIsPassword] = useState(false);
@@ -39,15 +48,15 @@ const SignIn = () => {
       target: { name, value },
     } = e;
     if (name === "id") {
-      setId(value);
-      if (id.length >= 6) {
+      setUserid(value);
+      if (userid.length >= 6) {
         setIsId(true);
       } else {
         setIsId(false);
       }
     } else if (name === "password") {
-      setPassword(value);
-      if (password.length >= 8) {
+      setUserpw(value);
+      if (userpw.length >= 8) {
         setIsPassword(true);
       } else {
         setIsPassword(false);
@@ -76,7 +85,7 @@ const SignIn = () => {
           required
           minLength={6}
           maxLength={10}
-          value={id}
+          value={userid}
           onChange={onChange}
           onKeyUp={onChange}
         ></IdPass>
@@ -97,7 +106,7 @@ const SignIn = () => {
           required
           minLength={8}
           maxLength={15}
-          value={password}
+          value={userpw}
           onChange={onChange}
           onKeyUp={onChange}
         ></IdPass>

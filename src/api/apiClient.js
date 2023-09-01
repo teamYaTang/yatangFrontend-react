@@ -1,7 +1,9 @@
 import axios from "axios";
 
 const apiClient = axios.create({
-  baseURL: "backendURL",
+  // http://백엔드ip:포트번호
+
+  baseURL: "http://localhost:3000",
 });
 
 // token 필요없을 듯..

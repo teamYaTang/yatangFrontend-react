@@ -1,188 +1,188 @@
-import React, { useState, useEffect } from "react";
-import styled from "styled-components";
-import { useNavigate } from "react-router-dom";
+// import React, { useState, useEffect } from "react";
+// import styled from "styled-components";
+// import { useNavigate } from "react-router-dom";
 
-import { AiOutlineLeft } from "react-icons/ai";
-import { ListItem } from "../components/list";
+// import { AiOutlineLeft } from "react-icons/ai";
+// import { ListItem } from "../components/list";
 
-const Ingredient = () => {
-  const navigate = useNavigate();
+// const Ingredient = () => {
+//   const navigate = useNavigate();
 
-  const naviRefrigerator = () => {
-    //조건문 추가해서 냉장고로 갈지 닉네임으로 갈지 결정
-    navigate("/refrigerator");
-  };
+//   const naviRefrigerator = () => {
+//     //조건문 추가해서 냉장고로 갈지 닉네임으로 갈지 결정
+//     navigate("/refrigerator");
+//   };
 
-  const naviUndo = () => {
-    navigate(-1);
-  };
+//   const naviUndo = () => {
+//     navigate(-1);
+//   };
 
-  const [ingredient, setIngredient] = useState("");
-  const [ingredientList, setIngredientList] = useState("");
+//   const [ingredient, setIngredient] = useState("");
+//   const [ingredientList, setIngredientList] = useState("");
 
-  const [isResult, setIsResult] = useState(false);
+//   const [isResult, setIsResult] = useState(false);
 
-  const onChange = (e) => {
-    const {
-      target: { name, value },
-    } = e;
-    if (name === "ingredient") {
-      setIngredient(value);
-    }
-  };
+//   const onChange = (e) => {
+//     const {
+//       target: { name, value },
+//     } = e;
+//     if (name === "ingredient") {
+//       setIngredient(value);
+//     }
+//   };
 
-  useEffect(() => {
-    // if (localStorage.getItem("accessToken")) {
-    //   navigate("/todo");
-    // }
-  }, []);
+//   useEffect(() => {
+//     // if (localStorage.getItem("accessToken")) {
+//     //   navigate("/todo");
+//     // }
+//   }, []);
 
-  return (
-    <>
-      <RefrigeratorDes>
-        <AiOutlineLeft onClick={naviUndo} />
-        <Title>${}의 냉장고</Title>
-      </RefrigeratorDes>
-      <form>
-        <Add
-          name="ingredient"
-          placeholder="넣을 재료를 입력하세요!"
-          required
-          maxLength={6}
-          value={ingredient}
-          onChange={onChange}
-          onKeyUp={onChange}
-        ></Add>
-        <AddBtn>추가</AddBtn>
-        <List>
-          {ingredientList?.length === 0 ? (
-            <span>아직 작성된 Todo 리스트가 존재하지 않습니다.</span>
-          ) : (
-            <>
-              {ingredientList?.length &&
-                ingredientList.map((list) => (
-                  <ListItem
-                    IngredientList={list}
-                    key={list.item}
-                    id={list.item}
-                    userId={list.item}
-                  />
-                ))}
-            </>
-          )}
-        </List>
-        <DelBtn>삭제</DelBtn>
-      </form>
-      <Blank></Blank>
+//   return (
+//     <>
+//       <RefrigeratorDes>
+//         <AiOutlineLeft onClick={naviUndo} />
+//         <Title>${}의 냉장고</Title>
+//       </RefrigeratorDes>
+//       <form>
+//         <Add
+//           name="ingredient"
+//           placeholder="넣을 재료를 입력하세요!"
+//           required
+//           maxLength={6}
+//           value={ingredient}
+//           onChange={onChange}
+//           onKeyUp={onChange}
+//         ></Add>
+//         <AddBtn>추가</AddBtn>
+//         <List>
+//           {ingredientList?.length === 0 ? (
+//             <span>아직 작성된 Todo 리스트가 존재하지 않습니다.</span>
+//           ) : (
+//             <>
+//               {ingredientList?.length &&
+//                 ingredientList.map((list) => (
+//                   <ListItem
+//                     IngredientList={list}
+//                     key={list.item}
+//                     id={list.item}
+//                     userId={list.item}
+//                   />
+//                 ))}
+//             </>
+//           )}
+//         </List>
+//         <DelBtn>삭제</DelBtn>
+//       </form>
+//       <Blank></Blank>
 
-      <Btn onClick={naviRefrigerator}>냉장고 재료 저장</Btn>
-    </>
-  );
-};
+//       <Btn onClick={naviRefrigerator}>냉장고 재료 저장</Btn>
+//     </>
+//   );
+// };
 
-let RefrigeratorDes = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  align-content: flex-start;
-  justify-content: space-between;
-  align-items: center;
+// let RefrigeratorDes = styled.div`
+//   display: flex;
+//   flex-direction: column;
+//   align-items: flex-start;
+//   align-content: flex-start;
+//   justify-content: space-between;
+//   align-items: center;
 
-  margin: 2vh;
+//   margin: 2vh;
 
-  width: 38vh;
+//   width: 38vh;
 
-  font-family: "Noto Sans KR", sans-serif;
-  font-style: normal;
-  font-weight: 700;
-  font-size: 15px;
-  line-height: 135%;
+//   font-family: "Noto Sans KR", sans-serif;
+//   font-style: normal;
+//   font-weight: 700;
+//   font-size: 15px;
+//   line-height: 135%;
 
-  color: #000000;
-`;
+//   color: #000000;
+// `;
 
-let Title = styled.div`
-  margin-bottom: 4px;
-  padding: 0 0 0 0.5vh;
-  align-item: left;
+// let Title = styled.div`
+//   margin-bottom: 4px;
+//   padding: 0 0 0 0.5vh;
+//   align-item: left;
 
-  font-family: "Noto Sans KR", sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 15px;
-  line-height: 135%;
-`;
+//   font-family: "Noto Sans KR", sans-serif;
+//   font-style: normal;
+//   font-weight: 400;
+//   font-size: 15px;
+//   line-height: 135%;
+// `;
 
-let Add = styled.input`
-  padding: 12px 12px;
+// let Add = styled.input`
+//   padding: 12px 12px;
 
-  box-sizing: border-box;
+//   box-sizing: border-box;
 
-  width: 342px;
-  height: 50px;
+//   width: 342px;
+//   height: 50px;
 
-  border: 1px solid #6b6b6b;
-  border-radius: 6px;
-  background-color: #fff062;
+//   border: 1px solid #6b6b6b;
+//   border-radius: 6px;
+//   background-color: #fff062;
 
-  font-family: "Noto Sans KR", sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 15px;
-  line-height: 135%;
+//   font-family: "Noto Sans KR", sans-serif;
+//   font-style: normal;
+//   font-weight: 400;
+//   font-size: 15px;
+//   line-height: 135%;
 
-  align-item: center;
+//   align-item: center;
 
-  &:focus {
-    border: none;
-  }
+//   &:focus {
+//     border: none;
+//   }
 
-  color: #b7b7b7;
-`;
+//   color: #b7b7b7;
+// `;
 
-let AddBtn = styled.div``;
+// let AddBtn = styled.div``;
 
-let List = styled.div`
-  margin-top: 1vh;
-`;
+// let List = styled.div`
+//   margin-top: 1vh;
+// `;
 
-let DelBtn = styled.div``;
+// let DelBtn = styled.div``;
 
-let Blank = styled.div`
-  margin: 3vh;
-`;
+// let Blank = styled.div`
+//   margin: 3vh;
+// `;
 
-let Btn = styled.button`
-  margin-top: 1vh;
-  width: 342px;
-  height: 56px;
+// let Btn = styled.button`
+//   margin-top: 1vh;
+//   width: 342px;
+//   height: 56px;
 
-  border: none;
-  background: #b5eaff;
-  border-radius: 6px;
+//   border: none;
+//   background: #b5eaff;
+//   border-radius: 6px;
 
-  font-family: "Noto Sans KR", sans-serif;
-  font-style: normal;
-  font-weight: 500;
-  font-size: 15px;
-  font-color: #000000;
-  line-height: 135%;
+//   font-family: "Noto Sans KR", sans-serif;
+//   font-style: normal;
+//   font-weight: 500;
+//   font-size: 15px;
+//   font-color: #000000;
+//   line-height: 135%;
 
-  text-align: center;
+//   text-align: center;
 
-  color: #000000;
+//   color: #000000;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
+//   display: flex;
+//   align-items: center;
+//   justify-content: center;
 
-  &:hover {
-    cursor: pointer;
-  }
+//   &:hover {
+//     cursor: pointer;
+//   }
 
-  &.disabled {
-    color: #d9d9d9;
-  }
-`;
+//   &.disabled {
+//     color: #d9d9d9;
+//   }
+// `;
 
-export default Ingredient;
+// export default Ingredient;
