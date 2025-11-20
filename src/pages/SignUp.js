@@ -8,10 +8,20 @@ const SignUp = () => {
   const navigate = useNavigate();
 
   const onSubmit = () => {
-    signup({ id, password })
-      .then(() => {
+    if (password !== confirmPassword) {
+      alert("비밀번호가 일치하지 않습니다.");
+      return;
+    }
+
+    signup({ 
+      email: email,
+      username: id, 
+      password: password,
+      confirmPassword: confirmPassword
+    })
+      .then((response) => {
         alert("성공적으로 가입 되었습니다.");
-        navigate("/signIn");
+        navigate("/");
       })
       .catch((error) => alert(error.message));
   };
@@ -20,12 +30,15 @@ const SignUp = () => {
     navigate("/");
   };
 
-  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
+  const [isEmail, setIsEmail] = useState(false);
   const [isId, setIsId] = useState(false);
   const [isPassword, setIsPassword] = useState(false);
+  const [isConfirmPassword, setIsConfirmPassword] = useState(false);
 
   const [isResult, setIsResult] = useState(false);
 
@@ -33,27 +46,47 @@ const SignUp = () => {
     const {
       target: { name, value },
     } = e;
-    if (name === "name") {
-      setName(value);
+    if (name === "email") {
+      setEmail(value);
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      setIsEmail(emailRegex.test(value));
     } else if (name === "id") {
       setId(value);
-      if (id.length >= 6) {
+      if (value.length >= 6 && value.length <= 10) {
         setIsId(true);
       } else {
         setIsId(false);
       }
     } else if (name === "password") {
       setPassword(value);
-      if (password.length >= 8) {
+      if (value.length >= 8 && value.length <= 15) {
         setIsPassword(true);
       } else {
         setIsPassword(false);
       }
+    } else if (name === "confirmPassword") {
+      setConfirmPassword(value);
+      const currentPassword = password; // 현재 password 값 사용
+      if (value === currentPassword && value.length >= 8) {
+        setIsConfirmPassword(true);
+      } else {
+        setIsConfirmPassword(false);
+      }
     }
 
-    if (isPassword) {
-      setIsResult(true);
-    }
+    // 모든 필드가 유효할 때만 회원가입 버튼 활성화
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const currentEmail = name === "email" ? value : email;
+    const currentId = name === "id" ? value : id;
+    const currentPassword = name === "password" ? value : password;
+    const currentConfirmPassword = name === "confirmPassword" ? value : confirmPassword;
+    
+    const validEmail = emailRegex.test(currentEmail);
+    const validId = currentId.length >= 6 && currentId.length <= 10;
+    const validPassword = currentPassword.length >= 8 && currentPassword.length <= 15;
+    const validConfirm = currentConfirmPassword === currentPassword && currentConfirmPassword.length >= 8;
+    
+    setIsResult(validEmail && validId && validPassword && validConfirm);
   };
 
   useEffect(() => {
@@ -66,15 +99,21 @@ const SignUp = () => {
     <>
       <LogoDes>회원가입</LogoDes>
       <form>
-        <Title>이름</Title>
+        <Title>이메일</Title>
         <IdPass
-          name="name"
-          placeholder="이름"
+          name="email"
+          type="email"
+          placeholder="이메일"
           required
-          value={name}
+          value={email}
           onChange={onChange}
+          onKeyUp={onChange}
         ></IdPass>
-        <Title></Title>
+        {isEmail ? (
+          <Valid className="validTrue"></Valid>
+        ) : (
+          <Valid>올바른 이메일 형식을 입력해주세요.</Valid>
+        )}
         <Title>아이디</Title>
         <IdPass
           name="id"
@@ -111,6 +150,23 @@ const SignUp = () => {
           <Valid className="validTrue"></Valid>
         ) : (
           <Valid>8자 이상 15자 이하의 비밀번호를 입력해주세요.</Valid>
+        )}
+        <Title>비밀번호 확인</Title>
+        <IdPass
+          name="confirmPassword"
+          type="password"
+          placeholder="비밀번호 확인"
+          required
+          minLength={8}
+          maxLength={15}
+          value={confirmPassword}
+          onChange={onChange}
+          onKeyUp={onChange}
+        ></IdPass>
+        {isConfirmPassword ? (
+          <Valid className="validTrue"></Valid>
+        ) : (
+          <Valid>비밀번호가 일치하지 않습니다.</Valid>
         )}
       </form>
       <Blank></Blank>

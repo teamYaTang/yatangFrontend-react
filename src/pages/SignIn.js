@@ -10,24 +10,16 @@ const SignIn = () => {
   const navigate = useNavigate();
 
   const onSubmit = () => {
-    signin({ userid, userpw })
-      .then(({ userid, userpw }) => {
-        console.log({ userid, userpw });
-
+    signin({ username: userid, password: userpw })
+      .then((data) => {
         alert("성공적으로 로그인 되었습니다.");
-        // localStorage.setItem("accessToken", data.accessToken);
-        // setAuthorization(data);
+        // 로그인 성공 후 냉장고 페이지로 이동
+        navigate("/refrigerator");
       })
       .catch((error) => {
-        console.log("error");
-        console.log({ userid, userpw });
-
-        console.log(error);
+        console.error("로그인 에러:", error);
         alert(error.message);
       });
-
-    //조건문 추가해서 냉장고로 갈지 닉네임으로 갈지 결정
-    // navigate("/refrigerator");
   };
 
   const naviSignUp = () => {
@@ -43,34 +35,39 @@ const SignIn = () => {
   const [isResult, setIsResult] = useState(false);
 
   const onChange = (e) => {
-    console.log("click");
     const {
       target: { name, value },
     } = e;
     if (name === "id") {
       setUserid(value);
-      if (userid.length >= 6) {
+      if (value.length >= 6 && value.length <= 10) {
         setIsId(true);
       } else {
         setIsId(false);
       }
     } else if (name === "password") {
       setUserpw(value);
-      if (userpw.length >= 8) {
+      if (value.length >= 8 && value.length <= 15) {
         setIsPassword(true);
       } else {
         setIsPassword(false);
       }
     }
 
-    if (isPassword) {
-      setIsResult(true);
-    }
+    // 모든 필드가 유효할 때만 로그인 버튼 활성화
+    const validId = name === "id" 
+      ? (value.length >= 6 && value.length <= 10)
+      : (userid.length >= 6 && userid.length <= 10);
+    const validPassword = name === "password"
+      ? (value.length >= 8 && value.length <= 15)
+      : (userpw.length >= 8 && userpw.length <= 15);
+    
+    setIsResult(validId && validPassword);
   };
 
   useEffect(() => {
     if (localStorage.getItem("accessToken")) {
-      navigate("/todo");
+      navigate("/refrigerator");
     }
   }, []);
 

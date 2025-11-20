@@ -1,19 +1,19 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 
 import { AiOutlineLogout } from "react-icons/ai";
 
 import {
-  createIngredientApi,
-  getIngredientApi,
-  deleteIngredientApi,
+  getMainFridgeApi,
+  getFridgeItemsApi,
+  getFreezerItemsApi,
 } from "../api/refrigerator";
-
-import ListItem from "../components/list";
+import { getUserProfile } from "../api/auth";
+import { getUserIdFromToken } from "../utils/jwt";
 import Pagination from "../components/pagination";
 
-const Todo = () => {
+const Refrigerator = () => {
   const navigate = useNavigate();
 
   const naviIngredient = () => {
@@ -24,72 +24,80 @@ const Todo = () => {
     navigate("/complete");
   };
 
-  // token 리셋 안함. only page redirect
   const naviLogout = () => {
+    localStorage.removeItem("accessToken");
     navigate("/");
   };
 
-  const [todoData, setTodoData] = useState();
+  const [userNickname, setUserNickname] = useState("");
+  const [fridgeId, setFridgeId] = useState(null);
+  const [fridgeItems, setFridgeItems] = useState([]);
+  const [freezerItems, setFreezerItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const todoInput = useRef();
-
-  const onClickCreate = (e) => {
-    e.preventDefault();
-    if (!todoInput.current.value) {
+  useEffect(() => {
+    if (!localStorage.getItem("accessToken")) {
+      navigate("/");
       return;
     }
 
-    createIngredientApi(todoInput.current.value)
-      .then((res) => {
-        todoInput.current.value = "";
-      })
-      .catch((err) => {
-        throw new Error(err);
-      });
-  };
+    const loadData = async () => {
+      try {
+        const userId = getUserIdFromToken();
+        if (!userId) {
+          navigate("/");
+          return;
+        }
 
-  useEffect(() => {
-    // if (!localStorage.getItem("accessToken")) {
-    //   navigate("/signin");
-    // }
-    // const getData = () => {
-    //   getIngredientApi()
-    //     .then((res) => {
-    //       setTodoData(res.data);
-    //     })
-    //     .catch((err) => {
-    //       throw new Error(err);
-    //     });
-    // };
-    // getData();
-  }, [todoData]);
+        // 사용자 정보 조회
+        const userProfile = await getUserProfile(userId);
+        setUserNickname(userProfile.nickname || "");
+
+        // 메인 냉장고 조회
+        const mainFridge = await getMainFridgeApi();
+        setFridgeId(mainFridge.data.id);
+
+        // 냉장실 아이템 조회
+        const fridgeItemsData = await getFridgeItemsApi(mainFridge.data.id);
+        setFridgeItems(fridgeItemsData.data || []);
+
+        // 냉동실 아이템 조회
+        const freezerItemsData = await getFreezerItemsApi(mainFridge.data.id);
+        setFreezerItems(freezerItemsData.data || []);
+      } catch (error) {
+        console.error("데이터 로딩 에러:", error);
+        alert("데이터를 불러오는데 실패했습니다.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [navigate]);
+
+  if (loading) {
+    return <LoadingText>로딩 중...</LoadingText>;
+  }
+
+  const totalItems = fridgeItems.length + freezerItems.length;
 
   return (
     <>
       <RefrigeratorDes>
-        <Blank />${}의 냉장고 <AiOutlineLogout onClick={naviLogout} />
+        <Blank />
+        {userNickname}의 냉장고 <AiOutlineLogout onClick={naviLogout} />
       </RefrigeratorDes>
 
-      {/* <Pagination avata={avata} myAvata={myAvata} isLoggedIn={isLoggedIn} /> */}
       <Pagination />
 
       <List>
-        {todoData?.length === 0 ? (
-          <IngredientDes>선택된 재료 : 재료를 선택해주세요!</IngredientDes>
+        {totalItems === 0 ? (
+          <IngredientDes>냉장고가 비어있습니다. 재료를 추가해주세요!</IngredientDes>
         ) : (
           <>
-            <IngredientDes>선택된 재료 : </IngredientDes>
-            {todoData?.length &&
-              todoData.map((todo) => (
-                <ListItem
-                  todoList={todo}
-                  key={todo.id}
-                  id={todo.id}
-                  todo={todo.todo}
-                  isCompleted={todo.isCompleted}
-                  userId={todo.userId}
-                />
-              ))}
+            <IngredientDes>
+              냉장실: {fridgeItems.length}개 | 냉동실: {freezerItems.length}개
+            </IngredientDes>
           </>
         )}
       </List>
@@ -224,4 +232,10 @@ let Btn = styled.button`
   }
 `;
 
-export default Todo;
+let LoadingText = styled.div`
+  text-align: center;
+  padding: 50px;
+  font-family: "Noto Sans KR", sans-serif;
+`;
+
+export default Refrigerator;

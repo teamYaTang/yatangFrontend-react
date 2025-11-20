@@ -1,9 +1,8 @@
 import axios from "axios";
 
 const apiClient = axios.create({
-  // http://백엔드ip:포트번호
-
-  baseURL: "http://localhost:3000",
+  // 프록시를 통해 /api로 요청하면 자동으로 백엔드로 전달됩니다
+  baseURL: "/api",
 });
 
 // token 필요없을 듯..

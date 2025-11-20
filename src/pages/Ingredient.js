@@ -1,188 +1,439 @@
-// import React, { useState, useEffect } from "react";
-// import styled from "styled-components";
-// import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import styled from "styled-components";
+import { useNavigate } from "react-router-dom";
 
-// import { AiOutlineLeft } from "react-icons/ai";
-// import { ListItem } from "../components/list";
+import { AiOutlineLeft } from "react-icons/ai";
 
-// const Ingredient = () => {
-//   const navigate = useNavigate();
+import {
+  getMainFridgeApi,
+  getFridgeItemsApi,
+  getFreezerItemsApi,
+  createFridgeItemApi,
+  createFreezerItemApi,
+  deleteFridgeItemApi,
+  deleteFreezerItemApi,
+} from "../api/refrigerator";
+import { getUserProfile } from "../api/auth";
+import { getUserIdFromToken } from "../utils/jwt";
 
-//   const naviRefrigerator = () => {
-//     //조건문 추가해서 냉장고로 갈지 닉네임으로 갈지 결정
-//     navigate("/refrigerator");
-//   };
+const Ingredient = () => {
+  const navigate = useNavigate();
 
-//   const naviUndo = () => {
-//     navigate(-1);
-//   };
+  const naviRefrigerator = () => {
+    navigate("/refrigerator");
+  };
 
-//   const [ingredient, setIngredient] = useState("");
-//   const [ingredientList, setIngredientList] = useState("");
+  const naviUndo = () => {
+    navigate(-1);
+  };
 
-//   const [isResult, setIsResult] = useState(false);
+  const [userNickname, setUserNickname] = useState("");
+  const [fridgeId, setFridgeId] = useState(null);
+  const [fridgeItems, setFridgeItems] = useState([]);
+  const [freezerItems, setFreezerItems] = useState([]);
+  const [activeTab, setActiveTab] = useState("fridge"); // "fridge" or "freezer"
+  const [itemName, setItemName] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [unit, setUnit] = useState("개");
+  const [expirationDate, setExpirationDate] = useState("");
+  const [manufactureDate, setManufactureDate] = useState("");
+  const [memo, setMemo] = useState("");
+  const [loading, setLoading] = useState(true);
 
-//   const onChange = (e) => {
-//     const {
-//       target: { name, value },
-//     } = e;
-//     if (name === "ingredient") {
-//       setIngredient(value);
-//     }
-//   };
+  useEffect(() => {
+    if (!localStorage.getItem("accessToken")) {
+      navigate("/");
+      return;
+    }
 
-//   useEffect(() => {
-//     // if (localStorage.getItem("accessToken")) {
-//     //   navigate("/todo");
-//     // }
-//   }, []);
+    const loadData = async () => {
+      try {
+        const userId = getUserIdFromToken();
+        if (!userId) {
+          navigate("/");
+          return;
+        }
 
-//   return (
-//     <>
-//       <RefrigeratorDes>
-//         <AiOutlineLeft onClick={naviUndo} />
-//         <Title>${}의 냉장고</Title>
-//       </RefrigeratorDes>
-//       <form>
-//         <Add
-//           name="ingredient"
-//           placeholder="넣을 재료를 입력하세요!"
-//           required
-//           maxLength={6}
-//           value={ingredient}
-//           onChange={onChange}
-//           onKeyUp={onChange}
-//         ></Add>
-//         <AddBtn>추가</AddBtn>
-//         <List>
-//           {ingredientList?.length === 0 ? (
-//             <span>아직 작성된 Todo 리스트가 존재하지 않습니다.</span>
-//           ) : (
-//             <>
-//               {ingredientList?.length &&
-//                 ingredientList.map((list) => (
-//                   <ListItem
-//                     IngredientList={list}
-//                     key={list.item}
-//                     id={list.item}
-//                     userId={list.item}
-//                   />
-//                 ))}
-//             </>
-//           )}
-//         </List>
-//         <DelBtn>삭제</DelBtn>
-//       </form>
-//       <Blank></Blank>
+        const userProfile = await getUserProfile(userId);
+        setUserNickname(userProfile.nickname || "");
 
-//       <Btn onClick={naviRefrigerator}>냉장고 재료 저장</Btn>
-//     </>
-//   );
-// };
+        const mainFridge = await getMainFridgeApi();
+        setFridgeId(mainFridge.data.id);
 
-// let RefrigeratorDes = styled.div`
-//   display: flex;
-//   flex-direction: column;
-//   align-items: flex-start;
-//   align-content: flex-start;
-//   justify-content: space-between;
-//   align-items: center;
+        const fridgeItemsData = await getFridgeItemsApi(mainFridge.data.id);
+        setFridgeItems(fridgeItemsData.data || []);
 
-//   margin: 2vh;
+        const freezerItemsData = await getFreezerItemsApi(mainFridge.data.id);
+        setFreezerItems(freezerItemsData.data || []);
+      } catch (error) {
+        console.error("데이터 로딩 에러:", error);
+        alert("데이터를 불러오는데 실패했습니다.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-//   width: 38vh;
+    loadData();
+  }, [navigate]);
 
-//   font-family: "Noto Sans KR", sans-serif;
-//   font-style: normal;
-//   font-weight: 700;
-//   font-size: 15px;
-//   line-height: 135%;
+  const handleAddItem = async (e) => {
+    e.preventDefault();
+    if (!itemName || !quantity) {
+      alert("재료명과 수량을 입력해주세요.");
+      return;
+    }
 
-//   color: #000000;
-// `;
+    if (!fridgeId) {
+      alert("냉장고 정보를 불러올 수 없습니다.");
+      return;
+    }
 
-// let Title = styled.div`
-//   margin-bottom: 4px;
-//   padding: 0 0 0 0.5vh;
-//   align-item: left;
+    try {
+      const itemData = {
+        name: itemName,
+        quantity: parseInt(quantity),
+        unit: unit,
+        expirationDate: expirationDate || null,
+        manufactureDate: manufactureDate || null,
+        memo: memo || null,
+      };
 
-//   font-family: "Noto Sans KR", sans-serif;
-//   font-style: normal;
-//   font-weight: 400;
-//   font-size: 15px;
-//   line-height: 135%;
-// `;
+      if (activeTab === "fridge") {
+        await createFridgeItemApi(fridgeId, itemData);
+        const updatedItems = await getFridgeItemsApi(fridgeId);
+        setFridgeItems(updatedItems.data || []);
+      } else {
+        await createFreezerItemApi(fridgeId, itemData);
+        const updatedItems = await getFreezerItemsApi(fridgeId);
+        setFreezerItems(updatedItems.data || []);
+      }
 
-// let Add = styled.input`
-//   padding: 12px 12px;
+      // 입력 필드 초기화
+      setItemName("");
+      setQuantity("");
+      setUnit("개");
+      setExpirationDate("");
+      setManufactureDate("");
+      setMemo("");
+      alert("재료가 추가되었습니다.");
+    } catch (error) {
+      console.error("재료 추가 에러:", error);
+      alert(error.message || "재료 추가에 실패했습니다.");
+    }
+  };
 
-//   box-sizing: border-box;
+  const handleDeleteItem = async (itemId) => {
+    if (!window.confirm("정말 삭제하시겠습니까?")) {
+      return;
+    }
 
-//   width: 342px;
-//   height: 50px;
+    if (!fridgeId) return;
 
-//   border: 1px solid #6b6b6b;
-//   border-radius: 6px;
-//   background-color: #fff062;
+    try {
+      if (activeTab === "fridge") {
+        await deleteFridgeItemApi(fridgeId, itemId);
+        const updatedItems = await getFridgeItemsApi(fridgeId);
+        setFridgeItems(updatedItems.data || []);
+      } else {
+        await deleteFreezerItemApi(fridgeId, itemId);
+        const updatedItems = await getFreezerItemsApi(fridgeId);
+        setFreezerItems(updatedItems.data || []);
+      }
+      alert("재료가 삭제되었습니다.");
+    } catch (error) {
+      console.error("재료 삭제 에러:", error);
+      alert(error.message || "재료 삭제에 실패했습니다.");
+    }
+  };
 
-//   font-family: "Noto Sans KR", sans-serif;
-//   font-style: normal;
-//   font-weight: 400;
-//   font-size: 15px;
-//   line-height: 135%;
+  if (loading) {
+    return <LoadingText>로딩 중...</LoadingText>;
+  }
 
-//   align-item: center;
+  const currentItems = activeTab === "fridge" ? fridgeItems : freezerItems;
 
-//   &:focus {
-//     border: none;
-//   }
+  return (
+    <>
+      <RefrigeratorDes>
+        <AiOutlineLeft onClick={naviUndo} />
+        <Title>{userNickname}의 냉장고</Title>
+      </RefrigeratorDes>
 
-//   color: #b7b7b7;
-// `;
+      <TabContainer>
+        <TabButton
+          active={activeTab === "fridge"}
+          onClick={() => setActiveTab("fridge")}
+        >
+          냉장실
+        </TabButton>
+        <TabButton
+          active={activeTab === "freezer"}
+          onClick={() => setActiveTab("freezer")}
+        >
+          냉동실
+        </TabButton>
+      </TabContainer>
 
-// let AddBtn = styled.div``;
+      <form onSubmit={handleAddItem}>
+        <Title>재료명</Title>
+        <Input
+          name="itemName"
+          placeholder="재료명을 입력하세요"
+          required
+          value={itemName}
+          onChange={(e) => setItemName(e.target.value)}
+        />
+        <Title>수량</Title>
+        <Input
+          type="number"
+          name="quantity"
+          placeholder="수량"
+          required
+          min="1"
+          value={quantity}
+          onChange={(e) => setQuantity(e.target.value)}
+        />
+        <Title>단위</Title>
+        <Select value={unit} onChange={(e) => setUnit(e.target.value)}>
+          <option value="개">개</option>
+          <option value="팩">팩</option>
+          <option value="병">병</option>
+          <option value="봉지">봉지</option>
+          <option value="g">g</option>
+          <option value="kg">kg</option>
+          <option value="ml">ml</option>
+          <option value="L">L</option>
+        </Select>
+        <Title>유통기한 (선택)</Title>
+        <Input
+          type="date"
+          name="expirationDate"
+          value={expirationDate}
+          onChange={(e) => setExpirationDate(e.target.value)}
+        />
+        <Title>제조일자 (선택)</Title>
+        <Input
+          type="date"
+          name="manufactureDate"
+          value={manufactureDate}
+          onChange={(e) => setManufactureDate(e.target.value)}
+        />
+        <Title>메모 (선택)</Title>
+        <Input
+          name="memo"
+          placeholder="메모를 입력하세요"
+          value={memo}
+          onChange={(e) => setMemo(e.target.value)}
+        />
+        <AddBtn type="submit">추가</AddBtn>
+      </form>
 
-// let List = styled.div`
-//   margin-top: 1vh;
-// `;
+      <List>
+        <Title>현재 {activeTab === "fridge" ? "냉장실" : "냉동실"} 재료</Title>
+        {currentItems.length === 0 ? (
+          <EmptyText>재료가 없습니다.</EmptyText>
+        ) : (
+          currentItems.map((item) => (
+            <ItemCard key={item.id}>
+              <ItemInfo>
+                <ItemName>{item.name}</ItemName>
+                <ItemDetail>
+                  {item.quantity} {item.unit}
+                  {item.expirationDate && (
+                    <> | 유통기한: {item.expirationDate}</>
+                  )}
+                </ItemDetail>
+                {item.memo && <ItemMemo>{item.memo}</ItemMemo>}
+              </ItemInfo>
+              <DeleteBtn onClick={() => handleDeleteItem(item.id)}>
+                삭제
+              </DeleteBtn>
+            </ItemCard>
+          ))
+        )}
+      </List>
 
-// let DelBtn = styled.div``;
+      <Blank></Blank>
+      <Btn onClick={naviRefrigerator}>냉장고로 돌아가기</Btn>
+    </>
+  );
+};
 
-// let Blank = styled.div`
-//   margin: 3vh;
-// `;
+let RefrigeratorDes = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 2vh;
+  width: 38vh;
+  font-family: "Noto Sans KR", sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 135%;
+  color: #000000;
+`;
 
-// let Btn = styled.button`
-//   margin-top: 1vh;
-//   width: 342px;
-//   height: 56px;
+let Title = styled.div`
+  margin-bottom: 4px;
+  padding: 0 0 0 0.5vh;
+  font-family: "Noto Sans KR", sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 135%;
+`;
 
-//   border: none;
-//   background: #b5eaff;
-//   border-radius: 6px;
+let TabContainer = styled.div`
+  display: flex;
+  gap: 10px;
+  margin: 2vh;
+`;
 
-//   font-family: "Noto Sans KR", sans-serif;
-//   font-style: normal;
-//   font-weight: 500;
-//   font-size: 15px;
-//   font-color: #000000;
-//   line-height: 135%;
+let TabButton = styled.button`
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: ${(props) => (props.active ? "#b5eaff" : "#f0f0f0")};
+  border-radius: 6px;
+  font-family: "Noto Sans KR", sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  color: ${(props) => (props.active ? "#000000" : "#666")};
+`;
 
-//   text-align: center;
+let Input = styled.input`
+  padding: 12px;
+  box-sizing: border-box;
+  width: 342px;
+  height: 50px;
+  border: 1px solid #6b6b6b;
+  border-radius: 6px;
+  background-color: #fff062;
+  font-family: "Noto Sans KR", sans-serif;
+  font-size: 15px;
+  margin-bottom: 10px;
+  &:focus {
+    border: 2px solid #b5eaff;
+    outline: none;
+  }
+`;
 
-//   color: #000000;
+let Select = styled.select`
+  padding: 12px;
+  box-sizing: border-box;
+  width: 342px;
+  height: 50px;
+  border: 1px solid #6b6b6b;
+  border-radius: 6px;
+  background-color: #fff062;
+  font-family: "Noto Sans KR", sans-serif;
+  font-size: 15px;
+  margin-bottom: 10px;
+`;
 
-//   display: flex;
-//   align-items: center;
-//   justify-content: center;
+let AddBtn = styled.button`
+  margin-top: 1vh;
+  width: 342px;
+  height: 56px;
+  border: none;
+  background: #b5eaff;
+  border-radius: 6px;
+  font-family: "Noto Sans KR", sans-serif;
+  font-weight: 500;
+  font-size: 15px;
+  color: #000000;
+  cursor: pointer;
+  &:hover {
+    background: #9dd9ff;
+  }
+`;
 
-//   &:hover {
-//     cursor: pointer;
-//   }
+let List = styled.div`
+  margin-top: 2vh;
+  padding: 0 2vh;
+`;
 
-//   &.disabled {
-//     color: #d9d9d9;
-//   }
-// `;
+let ItemCard = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #f9f9f9;
+`;
 
-// export default Ingredient;
+let ItemInfo = styled.div`
+  flex: 1;
+`;
+
+let ItemName = styled.div`
+  font-family: "Noto Sans KR", sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 5px;
+`;
+
+let ItemDetail = styled.div`
+  font-family: "Noto Sans KR", sans-serif;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 5px;
+`;
+
+let ItemMemo = styled.div`
+  font-family: "Noto Sans KR", sans-serif;
+  font-size: 12px;
+  color: #999;
+`;
+
+let DeleteBtn = styled.button`
+  padding: 8px 15px;
+  border: none;
+  background: #ff6953;
+  border-radius: 6px;
+  color: white;
+  font-family: "Noto Sans KR", sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  &:hover {
+    background: #e55a45;
+  }
+`;
+
+let EmptyText = styled.div`
+  text-align: center;
+  padding: 20px;
+  color: #999;
+  font-family: "Noto Sans KR", sans-serif;
+`;
+
+let Blank = styled.div`
+  margin: 3vh;
+`;
+
+let Btn = styled.button`
+  margin-top: 1vh;
+  width: 342px;
+  height: 56px;
+  border: none;
+  background: #b5eaff;
+  border-radius: 6px;
+  font-family: "Noto Sans KR", sans-serif;
+  font-weight: 500;
+  font-size: 15px;
+  color: #000000;
+  cursor: pointer;
+  &:hover {
+    background: #9dd9ff;
+  }
+`;
+
+let LoadingText = styled.div`
+  text-align: center;
+  padding: 50px;
+  font-family: "Noto Sans KR", sans-serif;
+`;
+
+export default Ingredient;
