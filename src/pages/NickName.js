@@ -2,157 +2,171 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 
+import { updateNickname } from "../api/auth";
+import { getUserIdFromToken } from "../utils/jwt";
+
 const NickName = () => {
   const navigate = useNavigate();
-  /*
-  const onSubmit = () => {
-    signin({ id, password })
-      .then((data) => {
-        localStorage.setItem("accessToken", data.accessToken);
-        setAuthorization(data);
-      })
-      .catch((error) => alert(error.message));
+  const [nickname, setNickname] = useState("");
+  const [isValid, setIsValid] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-    //조건문 추가해서 냉장고로 갈지 닉네임으로 갈지 결정
-    navigate("/refrigerator");
-  };
-  */
-
-  const naviRefrigerator = () => {
-    navigate("/refrigerator");
+  const handleChange = (e) => {
+    const value = e.target.value;
+    setNickname(value);
+    setIsValid(value.length >= 2 && value.length <= 10);
   };
 
-  const [nickName, setNickName] = useState("");
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!isValid || loading) return;
 
-  const [isNickName, setIsNickName] = useState(false);
-
-  const [isResult, setIsResult] = useState(false);
-
-  const onChange = (e) => {
-    console.log("click");
-    const {
-      target: { name, value },
-    } = e;
-    if (name === "nickName") {
-      setNickName(value);
-      if (nickName.length >= 6) {
-        setIsNickName(true);
-      } else {
-        setIsNickName(false);
-      }
+    const userId = getUserIdFromToken();
+    if (!userId) {
+      alert("로그인이 필요합니다.");
+      navigate("/");
+      return;
     }
 
-    if (isNickName) {
-      setIsResult(true);
+    try {
+      setLoading(true);
+      await updateNickname(userId, nickname);
+      alert("닉네임이 저장되었습니다!");
+      navigate("/refrigerator");
+    } catch (error) {
+      alert(error.message || "닉네임을 저장하는 중 오류가 발생했습니다.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  /*
   useEffect(() => {
-    if (localStorage.getItem("accessToken")) {
-      navigate("/todo");
+    if (!localStorage.getItem("accessToken")) {
+      navigate("/");
     }
-  }, []);
-  */
+  }, [navigate]);
 
   return (
-    <>
-      <form>
-        <Title>냉장고의 닉네임을 정해주세요!</Title>
-        <IdPass
-          name="nickName"
-          placeholder="2-10자리 이내 영문 또는 한글"
-          required
-          minLength={2}
+    <Page>
+      <Card>
+        <Heading>나만의 냉장고 이름</Heading>
+        <Subheading>좋아하는 별명을 정해보세요. 냉장고 리스트에서 사용돼요.</Subheading>
+
+        <form onSubmit={handleSubmit}>
+          <Field>
+            <Label>닉네임</Label>
+            <Input
+              name="nickname"
+              placeholder="2~10자 한글 또는 영문"
+              value={nickname}
+              onChange={handleChange}
           maxLength={10}
-          value={nickName}
-          onChange={onChange}
-          onKeyUp={onChange}
-        ></IdPass>
+            />
+            {!isValid && nickname && (
+              <Validation>2~10자 이내로 입력해주세요.</Validation>
+            )}
+          </Field>
+
+          <SubmitButton type="submit" disabled={!isValid || loading}>
+            {loading ? "저장 중..." : "닉네임 저장"}
+          </SubmitButton>
       </form>
-      {isResult ? (
-        <Auth date-testid="signin-button" onClick={naviRefrigerator}>
-          냉장고 채울게요
-        </Auth>
-      ) : (
-        <Auth date-testid="signin-button" className="disabled" disabled>
-          냉장고 채울게요
-        </Auth>
-      )}
-    </>
+
+        <SkipButton type="button" onClick={() => navigate("/refrigerator")}>
+          나중에 할래요
+        </SkipButton>
+      </Card>
+    </Page>
   );
 };
 
-let Title = styled.div`
-  margin-bottom: 4px;
-  padding: 0 0 0 0.5vh;
-  align-item: left;
-
-  font-family: "Noto Sans KR", sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 15px;
-  line-height: 135%;
-`;
-
-let IdPass = styled.input`
-  padding: 12px 12px;
-
-  box-sizing: border-box;
-
-  width: 342px;
-  height: 50px;
-
-  border: 1px solid #6b6b6b;
-  border-radius: 6px;
-  background-color: #fff062;
-
-  font-family: "Noto Sans KR", sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 15px;
-  line-height: 135%;
-
-  align-item: center;
-
-  &:focus {
-    border: none;
-  }
-
-  color: #b7b7b7;
-`;
-
-let Auth = styled.button`
-  margin-top: 1vh;
-  width: 342px;
-  height: 56px;
-
-  border: none;
-  background: #b5eaff;
-  border-radius: 6px;
-
-  font-family: "Noto Sans KR", sans-serif;
-  font-style: normal;
-  font-weight: 700;
-  font-size: 15px;
-  font-color: #000000;
-  line-height: 135%;
-
-  text-align: center;
-
-  color: #000000;
-
+const Page = styled.div`
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: linear-gradient(135deg, #f0f4ff, #f7fbff);
+  padding: 32px 16px;
+`;
 
-  &:hover {
-    cursor: pointer;
-  }
+const Card = styled.div`
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 28px;
+  padding: 40px 36px;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12);
+`;
 
-  &.disabled {
-    color: #d9d9d9;
+const Heading = styled.h1`
+  margin: 0;
+  font-size: 1.5rem;
+  color: #0f172a;
+`;
+
+const Subheading = styled.p`
+  margin: 8px 0 28px;
+  color: #64748b;
+  font-size: 0.95rem;
+`;
+
+const Field = styled.div`
+  margin-bottom: 20px;
+`;
+
+const Label = styled.label`
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #334155;
+`;
+
+const Input = styled.input`
+  width: 100%;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-size: 0.95rem;
+  background: #f8fafc;
+  &:focus {
+    outline: none;
+    border-color: #4c6ef5;
+    background: #ffffff;
   }
+`;
+
+const Validation = styled.p`
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: #f97316;
+`;
+
+const SubmitButton = styled.button`
+  width: 100%;
+  border: none;
+  border-radius: 14px;
+  padding: 14px;
+  background: linear-gradient(120deg, #4c6ef5, #5ed4f3);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: ${(props) => (props.disabled ? 0.4 : 1)};
+  pointer-events: ${(props) => (props.disabled ? "none" : "auto")};
+  box-shadow: 0 15px 28px rgba(76, 110, 245, 0.3);
+`;
+
+const SkipButton = styled.button`
+  width: 100%;
+  margin-top: 18px;
+  border: none;
+  border-radius: 14px;
+  padding: 14px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
 `;
 
 export default NickName;

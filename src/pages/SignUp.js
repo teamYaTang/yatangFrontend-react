@@ -3,32 +3,10 @@ import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 
 import { signup } from "../api/auth";
+import apiClient from "../api/apiClient";
 
 const SignUp = () => {
   const navigate = useNavigate();
-
-  const onSubmit = () => {
-    if (password !== confirmPassword) {
-      alert("비밀번호가 일치하지 않습니다.");
-      return;
-    }
-
-    signup({ 
-      email: email,
-      username: id, 
-      password: password,
-      confirmPassword: confirmPassword
-    })
-      .then((response) => {
-        alert("성공적으로 가입 되었습니다.");
-        navigate("/");
-      })
-      .catch((error) => alert(error.message));
-  };
-
-  const naviSignIn = () => {
-    navigate("/");
-  };
 
   const [email, setEmail] = useState("");
   const [id, setId] = useState("");
@@ -39,273 +17,310 @@ const SignUp = () => {
   const [isId, setIsId] = useState(false);
   const [isPassword, setIsPassword] = useState(false);
   const [isConfirmPassword, setIsConfirmPassword] = useState(false);
-
   const [isResult, setIsResult] = useState(false);
 
-  const onChange = (e) => {
+  const handleChange = (e) => {
     const {
       target: { name, value },
     } = e;
+
     if (name === "email") {
       setEmail(value);
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      setIsEmail(emailRegex.test(value));
+      const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      setIsEmail(regex.test(value));
     } else if (name === "id") {
       setId(value);
-      if (value.length >= 6 && value.length <= 10) {
-        setIsId(true);
-      } else {
-        setIsId(false);
-      }
+      setIsId(value.length >= 6 && value.length <= 10);
     } else if (name === "password") {
       setPassword(value);
-      if (value.length >= 8 && value.length <= 15) {
-        setIsPassword(true);
-      } else {
-        setIsPassword(false);
-      }
+      setIsPassword(value.length >= 8 && value.length <= 15);
     } else if (name === "confirmPassword") {
       setConfirmPassword(value);
-      const currentPassword = password; // 현재 password 값 사용
-      if (value === currentPassword && value.length >= 8) {
-        setIsConfirmPassword(true);
-      } else {
-        setIsConfirmPassword(false);
-      }
+      setIsConfirmPassword(value === password && value.length >= 8);
     }
 
-    // 모든 필드가 유효할 때만 회원가입 버튼 활성화
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const currentEmail = name === "email" ? value : email;
-    const currentId = name === "id" ? value : id;
-    const currentPassword = name === "password" ? value : password;
-    const currentConfirmPassword = name === "confirmPassword" ? value : confirmPassword;
-    
-    const validEmail = emailRegex.test(currentEmail);
-    const validId = currentId.length >= 6 && currentId.length <= 10;
-    const validPassword = currentPassword.length >= 8 && currentPassword.length <= 15;
-    const validConfirm = currentConfirmPassword === currentPassword && currentConfirmPassword.length >= 8;
-    
-    setIsResult(validEmail && validId && validPassword && validConfirm);
+    const nextEmail = name === "email" ? value : email;
+    const nextId = name === "id" ? value : id;
+    const nextPw = name === "password" ? value : password;
+    const nextConfirm = name === "confirmPassword" ? value : confirmPassword;
+
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail);
+    const idValid = nextId.length >= 6 && nextId.length <= 10;
+    const pwValid = nextPw.length >= 8 && nextPw.length <= 15;
+    const confirmValid = nextConfirm === nextPw && nextConfirm.length >= 8;
+    setIsResult(emailValid && idValid && pwValid && confirmValid);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!isResult) return;
+
+    signup({
+      email,
+      username: id,
+      password,
+      confirmPassword,
+    })
+      .then(() => {
+        alert("회원가입이 완료되었습니다. 로그인 해주세요!");
+        navigate("/");
+      })
+      .catch((error) => alert(error.message));
+  };
+
+  const handleSocialSignup = async (provider) => {
+    try {
+      const { data } = await apiClient.get(`/oauth2/authorization/${provider}`);
+      alert(data.message || `${provider} 간편 로그인 준비 중입니다.`);
+    } catch (error) {
+      alert(
+        error.response?.data?.message ||
+          "간편 로그인 연동을 준비 중입니다. 잠시만 기다려 주세요.",
+      );
+    }
   };
 
   useEffect(() => {
     if (localStorage.getItem("accessToken")) {
       navigate("/refrigerator");
     }
-  }, []);
+  }, [navigate]);
 
   return (
-    <>
-      <LogoDes>회원가입</LogoDes>
-      <form>
-        <Title>이메일</Title>
-        <IdPass
-          name="email"
-          type="email"
-          placeholder="이메일"
-          required
-          value={email}
-          onChange={onChange}
-          onKeyUp={onChange}
-        ></IdPass>
-        {isEmail ? (
-          <Valid className="validTrue"></Valid>
-        ) : (
-          <Valid>올바른 이메일 형식을 입력해주세요.</Valid>
-        )}
-        <Title>아이디</Title>
-        <IdPass
-          name="id"
-          placeholder="아이디"
-          required
-          minLength={6}
-          maxLength={10}
-          value={id}
-          onChange={onChange}
-          onKeyUp={onChange}
-        ></IdPass>
+    <Page>
+      <Card>
+        <Heading>계정을 만들어볼까요?</Heading>
+        <Subheading>몇 가지 정보만 입력하면 바로 시작할 수 있어요.</Subheading>
 
-        {isId ? (
-          <Valid className="validTrue"></Valid>
-        ) : (
-          <Valid>
-            6자 이상 10자 이하 영문, 숫자조합의 아이디를 입력해주세요.
-          </Valid>
+        <form onSubmit={handleSubmit}>
+          <Field>
+            <Label>이메일</Label>
+            <Input
+              type="email"
+              name="email"
+              placeholder="example@email.com"
+              value={email}
+              onChange={handleChange}
+            />
+            {!isEmail && email && (
+              <Validation>올바른 이메일 형식을 입력해주세요.</Validation>
+            )}
+          </Field>
+
+          <Field>
+            <Label>아이디</Label>
+            <Input
+          name="id"
+              placeholder="6~10자 영문/숫자 조합"
+          value={id}
+              onChange={handleChange}
+            />
+            {!isId && id && (
+              <Validation>6~10자의 영문/숫자 조합으로 입력해주세요.</Validation>
         )}
-        <Title>비밀번호</Title>
-        <IdPass
-          data-testid="password-input"
+          </Field>
+
+          <Field>
+            <Label>비밀번호</Label>
+            <Input
+              type="password"
           name="password"
+              placeholder="8~15자 비밀번호"
+              value={password}
+              onChange={handleChange}
+            />
+            {!isPassword && password && (
+              <Validation>8~15자의 비밀번호를 입력해주세요.</Validation>
+            )}
+          </Field>
+
+          <Field>
+            <Label>비밀번호 확인</Label>
+            <Input
           type="password"
-          placeholder="비밀번호"
-          required
-          minLength={8}
-          maxLength={15}
-          value={password}
-          onChange={onChange}
-          onKeyUp={onChange}
-        ></IdPass>
-        {isPassword ? (
-          <Valid className="validTrue"></Valid>
-        ) : (
-          <Valid>8자 이상 15자 이하의 비밀번호를 입력해주세요.</Valid>
+              name="confirmPassword"
+              placeholder="비밀번호를 한 번 더 입력하세요"
+              value={confirmPassword}
+              onChange={handleChange}
+            />
+            {!isConfirmPassword && confirmPassword && (
+              <Validation>비밀번호가 일치하지 않습니다.</Validation>
         )}
-        <Title>비밀번호 확인</Title>
-        <IdPass
-          name="confirmPassword"
-          type="password"
-          placeholder="비밀번호 확인"
-          required
-          minLength={8}
-          maxLength={15}
-          value={confirmPassword}
-          onChange={onChange}
-          onKeyUp={onChange}
-        ></IdPass>
-        {isConfirmPassword ? (
-          <Valid className="validTrue"></Valid>
-        ) : (
-          <Valid>비밀번호가 일치하지 않습니다.</Valid>
-        )}
+          </Field>
+
+          <SubmitButton type="submit" disabled={!isResult}>
+            회원가입
+          </SubmitButton>
       </form>
-      <Blank></Blank>
-      <LoginDes onClick={naviSignIn}>
-        이미 회원가입을 하셨나요? 로그인하러가기
-      </LoginDes>
-      {isResult ? (
-        <Auth date-testid="signup-button" onClick={onSubmit}>
-          회원가입
-        </Auth>
-      ) : (
-        <Auth date-testid="signup-button" className="disabled" disabled>
-          회원가입
-        </Auth>
-      )}
-    </>
+
+        <Divider>
+          <span>또는</span>
+        </Divider>
+
+        <SocialGroup>
+          <SocialButton
+            type="button"
+            $variant="kakao"
+            onClick={() => handleSocialSignup("kakao")}
+          >
+            카카오로 간편 가입
+          </SocialButton>
+          <SocialButton
+            type="button"
+            $variant="google"
+            onClick={() => handleSocialSignup("google")}
+          >
+            Google로 가입
+          </SocialButton>
+        </SocialGroup>
+
+        <SignInText>
+          이미 계정이 있으신가요?{" "}
+          <SignInLink type="button" onClick={() => navigate("/")}>
+            로그인
+          </SignInLink>
+        </SignInText>
+      </Card>
+    </Page>
   );
 };
 
-let LogoDes = styled.div`
-  font-family: "Noto Sans KR", sans-serif;
-  font-style: normal;
-  font-weight: 500;
-  font-size: 20px;
-  line-height: 135%;
-
-  margin-bottom: 10vh;
-`;
-
-let Title = styled.div`
-  margin-bottom: 4px;
-  padding: 0 0 0 0.5vh;
-  align-item: left;
-
-  font-family: "Noto Sans KR", sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 15px;
-  line-height: 135%;
-`;
-
-let LoginDes = styled.div`
-  width: 100%;
-
-  font-family: "Noto Sans KR", sans-serif;
-  font-style: normal;
-  font-weight: 700;
-  font-size: 15px;
-  line-height: 135%;
-
-  text-align: center;
-  margin-bottom: 0.5vh;
-
-  color: #00000099;
-
-  &:hover {
-    cursor: pointer;
-    color: #ff6953;
-  }
-`;
-
-let IdPass = styled.input`
-  padding: 12px 12px;
-
-  box-sizing: border-box;
-
-  width: 342px;
-  height: 50px;
-
-  border: 1px solid #6b6b6b;
-  border-radius: 6px;
-  background-color: #fff062;
-
-  font-family: "Noto Sans KR", sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 15px;
-  line-height: 135%;
-
-  align-item: center;
-
-  &:focus {
-    border: none;
-  }
-
-  color: #b7b7b7;
-`;
-
-let Blank = styled.div`
-  margin: 3vh;
-`;
-
-let Auth = styled.button`
-  margin-top: 1vh;
-  width: 342px;
-  height: 56px;
-
-  border: none;
-  background: #b5eaff;
-  border-radius: 6px;
-
-  font-family: "Noto Sans KR", sans-serif;
-  font-style: normal;
-  font-weight: 700;
-  font-size: 15px;
-  font-color: #000000;
-  line-height: 135%;
-
-  text-align: center;
-
-  color: #000000;
-
+const Page = styled.div`
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: linear-gradient(135deg, #edf2ff, #f5f7fb);
+  padding: 32px 16px;
+`;
 
-  &:hover {
-    cursor: pointer;
-  }
+const Card = styled.div`
+  width: 100%;
+  max-width: 520px;
+  background: #ffffff;
+  border-radius: 32px;
+  padding: 48px 40px;
+  box-shadow: 0 30px 60px rgba(15, 23, 42, 0.12);
+`;
 
-  &.disabled {
-    color: #d9d9d9;
+const Heading = styled.h1`
+  margin: 0;
+  font-size: 1.6rem;
+  color: #0f172a;
+`;
+
+const Subheading = styled.p`
+  margin: 8px 0 32px;
+  color: #64748b;
+  font-size: 0.95rem;
+`;
+
+const Field = styled.div`
+  margin-bottom: 18px;
+`;
+
+const Label = styled.label`
+  display: block;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  color: #334155;
+`;
+
+const Input = styled.input`
+  width: 100%;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-size: 0.95rem;
+  background: #f8fafc;
+  transition: border-color 0.2s, background 0.2s;
+  &:focus {
+    outline: none;
+    border-color: #4c6ef5;
+    background: #ffffff;
   }
 `;
 
-let Valid = styled.div`
-  font-family: "Noto Sans KR", sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 13px;
-  line-height: 135%;
-  align-item: left;
+const Validation = styled.p`
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: #f97316;
+`;
 
-  padding: 0.5vh 0 1.5vh 0.5vh;
-  color: #6b6b6b;
+const SubmitButton = styled.button`
+  width: 100%;
+  border: none;
+  border-radius: 16px;
+  padding: 16px;
+  background: linear-gradient(120deg, #4c6ef5, #5ed4f3);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-top: 12px;
+  cursor: pointer;
+  opacity: ${(props) => (props.disabled ? 0.4 : 1)};
+  pointer-events: ${(props) => (props.disabled ? "none" : "auto")};
+  box-shadow: 0 18px 30px rgba(76, 110, 245, 0.32);
+`;
 
-  &.validTrue {
-    height: 18px;
+const Divider = styled.div`
+  display: flex;
+  align-items: center;
+  margin: 28px 0;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  &:before,
+  &:after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #e2e8f0;
+    margin: 0 12px;
   }
+`;
+
+const SocialGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const SocialButton = styled.button`
+  width: 100%;
+  border: none;
+  border-radius: 14px;
+  padding: 14px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  ${(props) =>
+    props.$variant === "kakao"
+      ? `
+        background: #fee500;
+        color: #3c1e1e;
+      `
+      : `
+        background: #f1f5f9;
+        color: #1f2937;
+      `}
+`;
+
+const SignInText = styled.p`
+  margin-top: 32px;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  text-align: center;
+`;
+
+const SignInLink = styled.button`
+  border: none;
+  background: none;
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
 `;
 
 export default SignUp;
