@@ -16,6 +16,13 @@ export const getMainFridgeApi = async () => {
   return data;
 };
 
+// 냉장고 생성
+export const createFridgeApi = async (name) => {
+  const userId = ensureUser();
+  const { data } = await apiClient.post(`/fridges?userId=${userId}`, { name });
+  return data;
+};
+
 // 냉장고 목록 조회
 export const getUserFridgesApi = async () => {
   const userId = ensureUser();

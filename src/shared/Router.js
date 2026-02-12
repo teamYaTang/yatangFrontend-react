@@ -8,6 +8,7 @@ import Refrigerator from "../pages/Refrigerator";
 import Ingredient from "../pages/Ingredient";
 import Loading from "../pages/Loading";
 import Complete from "../pages/Complete";
+import Settings from "../pages/Settings";
 
 export default function Router() {
   return (
@@ -22,6 +23,7 @@ export default function Router() {
         <Route path="/ingredient" element={<Ingredient />} />
         <Route path="/loading" element={<Loading />} />
         <Route path="/complete" element={<Complete />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </BrowserRouter>
   );

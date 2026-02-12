@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useMemo } from "react";
-import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
-import { FiLogOut, FiPackage, FiLayers, FiPlusCircle } from "react-icons/fi";
+import { FiLogOut, FiPackage, FiLayers, FiPlusCircle, FiRepeat, FiSettings } from "react-icons/fi";
+import "../styles/Refrigerator.css";
 
 import {
   getMainFridgeApi,
   getFridgeItemsApi,
   getFreezerItemsApi,
+  updateFridgeItemApi,
+  updateFreezerItemApi,
+  deleteFridgeItemApi,
+  deleteFreezerItemApi,
 } from "../api/refrigerator";
 import { getUserProfile } from "../api/auth";
 import { getUserIdFromToken } from "../utils/jwt";
@@ -18,6 +22,13 @@ const Refrigerator = () => {
   const [fridgeItems, setFridgeItems] = useState([]);
   const [freezerItems, setFreezerItems] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // New State for Flip Effect
+  const [isFlipped, setIsFlipped] = useState(false); // false = Fridge (Front), true = Freezer (Back)
+
+  const [detailItem, setDetailItem] = useState(null);
+  const [detailType, setDetailType] = useState(null); // "fridge" | "freezer"
+  const [editValues, setEditValues] = useState(null);
 
   const navigateToIngredient = () => navigate("/ingredient");
   const navigateToRecipe = () => navigate("/complete");
@@ -71,361 +82,281 @@ const Refrigerator = () => {
     [fridgeItems.length, freezerItems.length],
   );
 
-  if (loading) {
-    return <Loading>냉장고 불러오는 중...</Loading>;
-  }
+  const openDetail = (item, type) => {
+    setDetailItem(item);
+    setDetailType(type);
+    setEditValues({
+      name: item.name || "",
+      quantity: item.quantity ?? 1,
+      unit: item.unit || "개",
+      expirationDate: item.expirationDate || "",
+      manufactureDate: item.manufactureDate || "",
+      memo: item.memo || "",
+    });
+  };
 
-  const renderItemCard = (item, type) => (
-    <ItemCard key={`${type}-${item.id}`}>
-      <ItemIcon type={type}>{type === "fridge" ? "R" : "F"}</ItemIcon>
-      <ItemContent>
-        <ItemName>{item.name}</ItemName>
-        <ItemMeta>
-          {item.quantity} {item.unit}
-          {item.expirationDate && (
-            <>
-              {" "}
-              · 유통기한 {item.expirationDate}
-              {item.daysUntilExpiration != null &&
-                ` (D${item.daysUntilExpiration >= 0 ? "-" : "+"}${Math.abs(
-                  item.daysUntilExpiration,
-                )})`}
-            </>
-          )}
-        </ItemMeta>
-        {item.memo && <ItemMemo>{item.memo}</ItemMemo>}
-      </ItemContent>
-      <ItemBadge $status={item.isExpired ? "danger" : item.isExpiringSoon ? "warn" : "safe"}>
-        {item.isExpired
-          ? "만료"
-          : item.isExpiringSoon
-            ? "임박"
-            : "보관중"}
-      </ItemBadge>
-    </ItemCard>
+  const closeDetail = () => {
+    setDetailItem(null);
+    setDetailType(null);
+    setEditValues(null);
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditValues((prev) => ({
+      ...prev,
+      [name]: name === "quantity" ? Number(value) || 0 : value,
+    }));
+  };
+
+  const handleUpdate = async () => {
+    if (!detailItem || !detailType || !mainFridge || !editValues) return;
+    try {
+      if (detailType === "fridge") {
+        await updateFridgeItemApi(mainFridge.id, detailItem.id, editValues);
+      } else {
+        await updateFreezerItemApi(mainFridge.id, detailItem.id, editValues);
+      }
+      await refreshItems(mainFridge.id);
+      closeDetail();
+    } catch (error) {
+      console.error("아이템 수정 에러:", error);
+      alert(error.message || "아이템 수정에 실패했습니다.");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!detailItem || !detailType || !mainFridge) return;
+    if (!window.confirm("정말 삭제하시겠습니까?")) return;
+    try {
+      if (detailType === "fridge") {
+        await deleteFridgeItemApi(mainFridge.id, detailItem.id);
+      } else {
+        await deleteFreezerItemApi(mainFridge.id, detailItem.id);
+      }
+      await refreshItems(mainFridge.id);
+      closeDetail();
+    } catch (error) {
+      console.error("아이템 삭제 에러:", error);
+      alert(error.message || "아이템 삭제에 실패했습니다.");
+    }
+  };
+
+  const renderGridItems = (items, type) => (
+    items.map((item) => (
+      <div
+        className="fridge-item-slot"
+        key={`${type}-${item.id}`}
+        onClick={() => openDetail(item, type)}
+      >
+        <div className={`fridge-item-icon ${type}`}>
+          {type === 'fridge' ? <FiPackage /> : <FiLayers />}
+          {/* Simple badge if expiring soon could be added here */}
+        </div>
+        <div className="fridge-item-name">{item.name}</div>
+      </div>
+    ))
   );
+
+  if (loading) {
+    return <div className="fridge-loading">냉장고 불러오는 중...</div>;
+  }
 
   return (
-    <PageWrapper>
-      <Header>
-        <div>
-          <Title>{userNickname}의 냉장고</Title>
-          <Subtitle>
+    <div className="fridge-page-wrapper">
+      <header className="fridge-header">
+        <div className="fridge-header-content">
+          <h1 className="fridge-title">{userNickname}의 냉장고</h1>
+          <p className="fridge-subtitle">
             {mainFridge?.description || "등록된 재료를 한눈에 관리해보세요."}
-          </Subtitle>
+          </p>
         </div>
-        <IconButton onClick={handleLogout}>
-          <FiLogOut size={18} /> 로그아웃
-        </IconButton>
-      </Header>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            className="fridge-logout-button"
+            onClick={() => navigate("/settings")}
+            title="설정"
+          >
+            <FiSettings size={18} />
+          </button>
+          <button className="fridge-logout-button" onClick={handleLogout}>
+            <FiLogOut size={18} />
+          </button>
+        </div>
+      </header>
 
-      <SummaryRow>
-        <SummaryCard>
-          <SummaryIcon $variant="fridge">
+      {/* 3D Flip Container */}
+      <div className="fridge-flip-container">
+        <div className={`fridge-flip-card ${isFlipped ? 'flipped' : ''}`}>
+
+          {/* Front Face: Fridge */}
+          <div className="fridge-face front">
+            <div className="fridge-face-header">
+              <div className="fridge-face-title">
+                <FiPackage size={24} color="#4c6ef5" /> 냉장실
+              </div>
+              <button className="fridge-switch-button" onClick={() => setIsFlipped(true)}>
+                <FiRepeat /> 냉동실 보기
+              </button>
+            </div>
+            <div className="fridge-grid-content">
+              {fridgeItems.length === 0 ? (
+                <div className="fridge-empty-text">냉장실이 비어있습니다.</div>
+              ) : (
+                renderGridItems(fridgeItems, "fridge")
+              )}
+            </div>
+          </div>
+
+          {/* Back Face: Freezer */}
+          <div className="fridge-face back">
+            <div className="fridge-face-header">
+              <div className="fridge-face-title">
+                <FiLayers size={24} color="#06b6d4" /> 냉동실
+              </div>
+              <button className="fridge-switch-button" onClick={() => setIsFlipped(false)}>
+                <FiRepeat /> 냉장실 보기
+              </button>
+            </div>
+            <div className="fridge-grid-content">
+              {freezerItems.length === 0 ? (
+                <div className="fridge-empty-text">냉동실이 비어있습니다.</div>
+              ) : (
+                renderGridItems(freezerItems, "freezer")
+              )}
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div className="fridge-action-row">
+        <button className="fridge-primary-button" onClick={navigateToIngredient}>
+          재료 추가 / 수정
+        </button>
+        <button className="fridge-secondary-button" onClick={navigateToRecipe}>
+          메뉴 추천 받기
+        </button>
+      </div>
+
+      <div className="fridge-summary-row">
+        <div className="fridge-summary-card">
+          <div className="fridge-summary-icon variant-fridge">
             <FiPackage size={28} />
-          </SummaryIcon>
-          <SummaryText>
+          </div>
+          <div className="fridge-summary-text">
             <span>냉장실</span>
             <strong>{fridgeItems.length}개</strong>
-          </SummaryText>
-        </SummaryCard>
-        <SummaryCard>
-          <SummaryIcon $variant="freezer">
+          </div>
+        </div>
+        <div className="fridge-summary-card">
+          <div className="fridge-summary-icon variant-freezer">
             <FiLayers size={28} />
-          </SummaryIcon>
-          <SummaryText>
+          </div>
+          <div className="fridge-summary-text">
             <span>냉동실</span>
             <strong>{freezerItems.length}개</strong>
-          </SummaryText>
-        </SummaryCard>
-        <SummaryCard>
-          <SummaryIcon $variant="all">
+          </div>
+        </div>
+        <div className="fridge-summary-card">
+          <div className="fridge-summary-icon variant-all">
             <FiPlusCircle size={28} />
-          </SummaryIcon>
-          <SummaryText>
+          </div>
+          <div className="fridge-summary-text">
             <span>전체 재료</span>
             <strong>{totalItems}개</strong>
-          </SummaryText>
-        </SummaryCard>
-      </SummaryRow>
+          </div>
+        </div>
+      </div>
 
-      <ActionRow>
-        <PrimaryButton onClick={navigateToIngredient}>
-          재료 추가 / 수정
-        </PrimaryButton>
-        <SecondaryButton onClick={navigateToRecipe}>
-          메뉴 추천 받기
-        </SecondaryButton>
-      </ActionRow>
-
-      <Section>
-        <SectionHeader>
-          <SectionTitle>냉장실 재료</SectionTitle>
-          <SectionCount>{fridgeItems.length}개</SectionCount>
-        </SectionHeader>
-        {fridgeItems.length === 0 ? (
-          <EmptyState>냉장실이 비어있어요. 재료를 채워보세요!</EmptyState>
-        ) : (
-          <Grid>{fridgeItems.map((item) => renderItemCard(item, "fridge"))}</Grid>
-        )}
-      </Section>
-
-      <Section>
-        <SectionHeader>
-          <SectionTitle>냉동실 재료</SectionTitle>
-          <SectionCount>{freezerItems.length}개</SectionCount>
-        </SectionHeader>
-        {freezerItems.length === 0 ? (
-          <EmptyState>냉동실이 비어있어요. 필요한 재료를 얼려보세요!</EmptyState>
-        ) : (
-          <Grid>{freezerItems.map((item) => renderItemCard(item, "freezer"))}</Grid>
-        )}
-      </Section>
-    </PageWrapper>
+      {detailItem && editValues && (
+        <div className="fridge-modal-backdrop" onClick={closeDetail}>
+          <div className="fridge-modal" onClick={(e) => e.stopPropagation()}>
+            <h2 className="fridge-modal-title">
+              {detailType === "fridge" ? "냉장실" : "냉동실"} 재료 상세
+            </h2>
+            <div className="fridge-modal-field">
+              <label className="fridge-modal-label">이름</label>
+              <input
+                className="fridge-modal-input"
+                name="name"
+                value={editValues.name}
+                onChange={handleEditChange}
+              />
+            </div>
+            <div className="fridge-modal-row">
+              <div className="fridge-modal-field">
+                <label className="fridge-modal-label">수량</label>
+                <input
+                  className="fridge-modal-input"
+                  type="number"
+                  name="quantity"
+                  min="1"
+                  value={editValues.quantity}
+                  onChange={handleEditChange}
+                />
+              </div>
+              <div className="fridge-modal-field">
+                <label className="fridge-modal-label">단위</label>
+                <select
+                  className="fridge-modal-select"
+                  name="unit"
+                  value={editValues.unit}
+                  onChange={handleEditChange}
+                >
+                  {["개", "팩", "병", "봉지", "g", "kg", "ml", "L"].map((u) => (
+                    <option key={u} value={u}>
+                      {u}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="fridge-modal-row">
+              <div className="fridge-modal-field">
+                <label className="fridge-modal-label">유통기한</label>
+                <input
+                  className="fridge-modal-input"
+                  type="date"
+                  name="expirationDate"
+                  value={editValues.expirationDate || ""}
+                  onChange={handleEditChange}
+                />
+              </div>
+              <div className="fridge-modal-field">
+                <label className="fridge-modal-label">제조일자</label>
+                <input
+                  className="fridge-modal-input"
+                  type="date"
+                  name="manufactureDate"
+                  value={editValues.manufactureDate || ""}
+                  onChange={handleEditChange}
+                />
+              </div>
+            </div>
+            <div className="fridge-modal-field">
+              <label className="fridge-modal-label">메모</label>
+              <input
+                className="fridge-modal-input"
+                name="memo"
+                placeholder="보관 위치나 메모를 입력하세요."
+                value={editValues.memo}
+                onChange={handleEditChange}
+              />
+            </div>
+            <div className="fridge-modal-actions">
+              <button className="fridge-modal-delete-btn" type="button" onClick={handleDelete}>
+                삭제
+              </button>
+              <button className="fridge-modal-primary-btn" type="button" onClick={handleUpdate}>
+                수정 사항 저장
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
-
-const PageWrapper = styled.div`
-  min-height: 100vh;
-  background: #f6f8fb;
-  padding: 32px 24px 64px;
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-`;
-
-const Header = styled.header`
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-`;
-
-const Title = styled.h1`
-  font-size: 1.5rem;
-  margin: 0;
-  color: #1f2d3d;
-`;
-
-const Subtitle = styled.p`
-  margin: 6px 0 0;
-  color: #64748b;
-  font-size: 0.95rem;
-`;
-
-const IconButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #eef2ff;
-  border: none;
-  border-radius: 999px;
-  padding: 10px 18px;
-  color: #4c6ef5;
-  font-weight: 600;
-  cursor: pointer;
-  &:hover {
-    background: #e0e7ff;
-  }
-`;
-
-const SummaryRow = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-`;
-
-const SummaryCard = styled.div`
-  background: #ffffff;
-  border-radius: 20px;
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
-`;
-
-const SummaryIcon = styled.div`
-  width: 52px;
-  height: 52px;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
-  background: ${(props) =>
-    props.$variant === "fridge"
-      ? "#4c8bf5"
-      : props.$variant === "freezer"
-        ? "#22b8cf"
-        : "#a855f7"};
-`;
-
-const SummaryText = styled.div`
-  display: flex;
-  flex-direction: column;
-  span {
-    color: #94a3b8;
-    font-size: 0.9rem;
-  }
-  strong {
-    color: #0f172a;
-    font-size: 1.4rem;
-    margin-top: 2px;
-  }
-`;
-
-const ActionRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-`;
-
-const PrimaryButton = styled.button`
-  flex: 1;
-  min-width: 200px;
-  border: none;
-  border-radius: 12px;
-  padding: 16px;
-  background: linear-gradient(120deg, #4c6ef5, #5ed4f3);
-  color: #ffffff;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 12px 22px rgba(76, 110, 245, 0.3);
-  &:hover {
-    opacity: 0.95;
-  }
-`;
-
-const SecondaryButton = styled.button`
-  flex: 1;
-  min-width: 200px;
-  border: none;
-  border-radius: 12px;
-  padding: 16px;
-  background: #ffffff;
-  color: #2563eb;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: 2px solid #dbeafe;
-  &:hover {
-    background: #f8fbff;
-  }
-`;
-
-const Section = styled.section`
-  background: #ffffff;
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
-`;
-
-const SectionHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-`;
-
-const SectionTitle = styled.h2`
-  margin: 0;
-  font-size: 1.2rem;
-  color: #1e293b;
-`;
-
-const SectionCount = styled.span`
-  color: #94a3b8;
-  font-weight: 600;
-`;
-
-const Grid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
-`;
-
-const ItemCard = styled.div`
-  background: #f8fafc;
-  border-radius: 16px;
-  padding: 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border: 1px solid #e2e8f0;
-`;
-
-const ItemIcon = styled.div`
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: ${(props) =>
-    props.type === "fridge" ? "#e0edff" : "#d9fbff"};
-  color: ${(props) => (props.type === "fridge" ? "#2563eb" : "#0ca5c8")};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-`;
-
-const ItemContent = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-`;
-
-const ItemName = styled.span`
-  font-weight: 600;
-  color: #0f172a;
-`;
-
-const ItemMeta = styled.span`
-  font-size: 0.9rem;
-  color: #64748b;
-`;
-
-const ItemMemo = styled.span`
-  font-size: 0.85rem;
-  color: #94a3b8;
-`;
-
-const ItemBadge = styled.span`
-  font-size: 0.8rem;
-  font-weight: 700;
-  padding: 6px 12px;
-  border-radius: 999px;
-  color: ${(props) =>
-    props.$status === "danger"
-      ? "#b42318"
-      : props.$status === "warn"
-        ? "#b45309"
-        : "#0f766e"};
-  background: ${(props) =>
-    props.$status === "danger"
-      ? "#fee4e2"
-      : props.$status === "warn"
-        ? "#fef3c7"
-        : "#d1fae5"};
-`;
-
-const EmptyState = styled.div`
-  padding: 32px;
-  text-align: center;
-  color: #94a3b8;
-  border: 2px dashed #e2e8f0;
-  border-radius: 16px;
-`;
-
-const Loading = styled.div`
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.1rem;
-  color: #64748b;
-  background: #f6f8fb;
-`;
 
 export default Refrigerator;

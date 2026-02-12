@@ -1,7 +1,6 @@
-import apiClient, {setAuthorization} from "./apiClient";
+import apiClient, { setAuthorization } from "./apiClient";
 
-//ex
-let id = 1;
+
 
 // signIn
 // export async function signin(data) {
@@ -124,5 +123,17 @@ export async function updateNickname(userId, nickname) {
     })
     .catch((error) => {
       throw new Error(error.response?.data?.message || "닉네임 업데이트에 실패했습니다.");
+    });
+}
+
+// 비밀번호 변경
+export async function updatePasswordApi(userId, currentPassword, newPassword) {
+  return apiClient
+    .patch(`/users/${userId}/password`, { currentPassword, newPassword })
+    .then((response) => {
+      return response.data;
+    })
+    .catch((error) => {
+      throw new Error(error.response?.data?.message || "비밀번호 변경에 실패했습니다.");
     });
 }
