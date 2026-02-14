@@ -1,0 +1,403 @@
+/* src/styles/Refrigerator.css */
+.fridge-page-wrapper {
+  min-height: 100vh;
+  background: #f6f8fb;
+  padding: 32px 24px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.fridge-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+
+
+.fridge-title {
+  font-size: 1.5rem;
+  margin: 0;
+  color: #1f2d3d;
+}
+
+.fridge-subtitle {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.fridge-logout-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #eef2ff;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 18px;
+  color: #4c6ef5;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fridge-logout-button:hover {
+  background: #e0e7ff;
+}
+
+/* --- Flip Card Effect --- */
+.fridge-flip-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  perspective: 1500px; /* Gives 3D depth */
+  z-index: 10;
+}
+
+.fridge-flip-card {
+  width: 100%;
+  max-width: 600px;
+  min-height: 500px; /* Reduced fixed height for responsiveness, or auto */
+  position: relative;
+  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transform-style: preserve-3d;
+}
+
+.fridge-flip-card.flipped {
+  transform: rotateY(180deg);
+}
+
+.fridge-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden; /* Hides the back side when flipped */
+  
+  background: #ffffff;
+  border-radius: 32px;
+  padding: 24px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.fridge-face.front {
+  background: linear-gradient(135deg, #e5f0ff, #ffffff);
+  border: 4px solid #dbeafe;
+}
+
+.fridge-face.back {
+  background: linear-gradient(135deg, #e0f2fe, #ffffff);
+  border: 4px solid #cffafe;
+  transform: rotateY(180deg);
+}
+
+.fridge-face-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid rgba(0,0,0,0.05);
+}
+
+.fridge-face-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.fridge-switch-button {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(0,0,0,0.1);
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.fridge-switch-button:hover {
+  background: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.fridge-grid-content {
+  width: 100%;
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 16px;
+  padding: 8px;
+}
+
+.fridge-item-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.fridge-item-slot:hover {
+  transform: translateY(-4px);
+}
+
+.fridge-item-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  background: #ffffff;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.1);
+  color: #4c6ef5;
+  position: relative;
+}
+
+.fridge-item-icon.freezer {
+  color: #06b6d4;
+}
+
+.fridge-item-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ef4444;
+  color: white;
+  font-size: 10px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.fridge-item-name {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #334155;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.fridge-empty-text {
+  margin-top: 40px;
+  color: #94a3b8;
+  font-size: 0.95rem;
+}
+
+/* --- Summary & Actions --- */
+.fridge-summary-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.fridge-summary-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.fridge-summary-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+.fridge-summary-icon.variant-fridge { background: #4c8bf5; }
+.fridge-summary-icon.variant-freezer { background: #22b8cf; }
+.fridge-summary-icon.variant-all { background: #a855f7; }
+
+.fridge-summary-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.fridge-summary-text span {
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.fridge-summary-text strong {
+  color: #0f172a;
+  font-size: 1.4rem;
+  margin-top: 2px;
+}
+
+.fridge-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.fridge-primary-button {
+  flex: 1;
+  min-width: 200px;
+  border: none;
+  border-radius: 12px;
+  padding: 16px;
+  background: linear-gradient(120deg, #4c6ef5, #5ed4f3);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 12px 22px rgba(76, 110, 245, 0.3);
+}
+
+.fridge-primary-button:hover {
+  opacity: 0.95;
+}
+
+.fridge-secondary-button {
+  flex: 1;
+  min-width: 200px;
+  border: none;
+  border-radius: 12px;
+  padding: 16px;
+  background: #ffffff;
+  color: #2563eb;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 2px solid #dbeafe;
+}
+
+.fridge-secondary-button:hover {
+  background: #f8fbff;
+}
+
+/* Modal */
+.fridge-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+}
+
+.fridge-modal {
+  width: 100%;
+  max-width: 460px;
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 24px 22px 20px;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.fridge-modal-title {
+  margin: 0 0 4px;
+  font-size: 1.2rem;
+  color: #0f172a;
+}
+
+.fridge-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fridge-modal-label {
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.fridge-modal-input,
+.fridge-modal-select {
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  background: #f8fafc;
+}
+
+.fridge-modal-input:focus,
+.fridge-modal-select:focus {
+  outline: none;
+  border-color: #4c6ef5;
+  background: #ffffff;
+}
+
+.fridge-modal-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.fridge-modal-row > div {
+  flex: 1;
+  min-width: 130px;
+}
+
+.fridge-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.fridge-modal-delete-btn {
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: none;
+  background: #fee2e2;
+  color: #b42318;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fridge-modal-primary-btn {
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(120deg, #4c6ef5, #5ed4f3);
+  color: #ffffff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fridge-loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: #64748b;
+  background: #f6f8fb;
+}

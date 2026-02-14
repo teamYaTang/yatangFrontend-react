@@ -1,0 +1,182 @@
+/* src/styles/Settings.css */
+.settings-page-wrapper {
+  min-height: 100vh;
+  padding: 32px 24px 80px;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.settings-back-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.settings-back-button:hover {
+  background-color: #e2e8f0;
+}
+
+.settings-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+/* Tabs */
+.settings-tabs {
+  display: flex;
+  background: #e2e8f0;
+  padding: 4px;
+  border-radius: 16px;
+  gap: 4px;
+}
+
+.settings-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.settings-tab.active {
+  background: #ffffff;
+  color: #4c6ef5;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* Content Sections */
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.settings-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.settings-card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #334155;
+  margin: 0 0 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.settings-input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 1rem;
+  background: #f8fafc;
+  transition: all 0.2s;
+  box-sizing: border-box; /* Important for padding */
+}
+
+.settings-input:focus {
+  outline: none;
+  border-color: #4c6ef5;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(76, 110, 245, 0.1);
+}
+
+.settings-button {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #4c6ef5, #5ed4f3);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  box-shadow: 0 10px 20px rgba(76, 110, 245, 0.2);
+}
+
+.settings-button:hover {
+  opacity: 0.95;
+}
+
+.settings-button:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Fridge List */
+.settings-fridge-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-fridge-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.settings-fridge-name {
+  font-weight: 500;
+  color: #334155;
+}
+
+.settings-fridge-date {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.settings-empty-text {
+  text-align: center;
+  color: #94a3b8;
+  padding: 20px;
+}

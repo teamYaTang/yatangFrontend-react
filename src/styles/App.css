@@ -1,0 +1,15 @@
+/* src/styles/App.css */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* text-align: center; */
+  margin: 0 auto;
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh;
+  background: #fff496;
+  box-shadow: 0 0 2rem 0.1rem rgba(0, 0, 0, 0.2);
+  font-family: "Noto Sans KR", sans-serif;
+}

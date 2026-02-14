@@ -1,0 +1,29 @@
+/* src/styles/Pagination.css */
+.pagination-section {
+  display: flex;
+  align-items: center;
+  /* z-index: 2; */
+}
+
+.pagination-recone {
+  display: flex;
+  align-items: center;
+  background: #d9d9d9;
+  border-radius: 23px;
+  z-index: 2;
+}
+
+.pagination-my {
+  width: 271px;
+  padding: 15px 20px;
+  display: grid;
+  grid-template-rows: repeat(3, 185px);
+  grid-template-columns: repeat(3, 55px);
+  margin-top: 2vh;
+  gap: 0px 49px;
+}
+
+.pagination-my > *:nth-of-type(3n + 1),
+.pagination-my > *:nth-of-type(3n + 3) {
+  align-self: end;
+}

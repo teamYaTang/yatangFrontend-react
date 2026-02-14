@@ -1,0 +1,32 @@
+/* src/styles/Button.css */
+.button-container {
+  margin-top: 1vh;
+  width: 342px;
+  height: 56px;
+
+  background: #b5eaff;
+  border-radius: 6px;
+  border: none; /* Reset default button border */
+
+  font-family: "Noto Sans KR", sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 135%;
+
+  text-align: center;
+
+  color: #ff6953;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.button-container:hover {
+  cursor: pointer;
+}
+
+.button-container.disabled {
+  color: #ffffff;
+}

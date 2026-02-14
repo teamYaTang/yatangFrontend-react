@@ -1,0 +1,19 @@
+/* src/styles/Loading.css */
+.loading-logo {
+  width: 257px;
+  height: 260px;
+  margin-bottom: 10vh;
+}
+
+.loading-title {
+  margin-bottom: 4px;
+  padding: 0 0 0 0.5vh;
+  /* align-item is not a valid property on block itself, but kept for fidelity if it was doing something flex-related implicitly in styled-components, but standard div doesn't use it. Assuming it was meant to be text-align or just ignored. */
+  text-align: left; 
+
+  font-family: "Noto Sans KR", sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 135%;
+}

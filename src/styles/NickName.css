@@ -1,0 +1,93 @@
+/* src/styles/NickName.css */
+.nickname-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0f4ff, #f7fbff);
+  padding: 32px 16px;
+}
+
+.nickname-card {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 28px;
+  padding: 40px 36px;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12);
+}
+
+.nickname-heading {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #0f172a;
+}
+
+.nickname-subheading {
+  margin: 8px 0 28px;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.nickname-field {
+  margin-bottom: 20px;
+}
+
+.nickname-label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #334155;
+}
+
+.nickname-input {
+  width: 100%;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-size: 0.95rem;
+  background: #f8fafc;
+}
+
+.nickname-input:focus {
+  outline: none;
+  border-color: #4c6ef5;
+  background: #ffffff;
+}
+
+.nickname-validation {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: #f97316;
+}
+
+.nickname-submit-button {
+  width: 100%;
+  border: none;
+  border-radius: 14px;
+  padding: 14px;
+  background: linear-gradient(120deg, #4c6ef5, #5ed4f3);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 15px 28px rgba(76, 110, 245, 0.3);
+}
+
+.nickname-submit-button:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.nickname-skip-button {
+  width: 100%;
+  margin-top: 18px;
+  border: none;
+  border-radius: 14px;
+  padding: 14px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
