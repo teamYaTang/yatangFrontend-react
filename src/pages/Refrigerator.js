@@ -4,7 +4,7 @@ import { FiLogOut, FiPackage, FiLayers, FiPlusCircle, FiRepeat, FiSettings } fro
 import "../styles/Refrigerator.css";
 
 import {
-  getMainFridgeApi,
+  getUserFridgesApi,
   getFridgeItemsApi,
   getFreezerItemsApi,
   updateFridgeItemApi,
@@ -19,6 +19,7 @@ const Refrigerator = () => {
   const navigate = useNavigate();
   const [userNickname, setUserNickname] = useState("");
   const [mainFridge, setMainFridge] = useState(null);
+  const [fridges, setFridges] = useState([]);
   const [fridgeItems, setFridgeItems] = useState([]);
   const [freezerItems, setFreezerItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -63,9 +64,14 @@ const Refrigerator = () => {
         const profile = await getUserProfile(userId);
         setUserNickname(profile.nickname || profile.username || "");
 
-        const fridge = await getMainFridgeApi();
-        setMainFridge(fridge);
-        await refreshItems(fridge.id);
+        const fridgeList = await getUserFridgesApi();
+        setFridges(fridgeList);
+
+        if (fridgeList.length > 0) {
+          const main = fridgeList.find(f => f.isMain) || fridgeList[0];
+          setMainFridge(main);
+          await refreshItems(main.id);
+        }
       } catch (error) {
         console.error("데이터 로딩 에러:", error);
         alert("데이터를 불러오는데 실패했습니다.");
@@ -76,6 +82,17 @@ const Refrigerator = () => {
 
     loadData();
   }, [navigate]);
+
+  const handleFridgeChange = async (e) => {
+    const selectedId = Number(e.target.value);
+    const selected = fridges.find(f => f.id === selectedId);
+    if (selected) {
+      setLoading(true);
+      setMainFridge(selected);
+      await refreshItems(selected.id);
+      setLoading(false);
+    }
+  };
 
   const totalItems = useMemo(
     () => fridgeItems.length + freezerItems.length,
@@ -166,7 +183,21 @@ const Refrigerator = () => {
     <div className="fridge-page-wrapper">
       <header className="fridge-header">
         <div className="fridge-header-content">
-          <h1 className="fridge-title">{userNickname}의 냉장고</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {fridges.length > 1 ? (
+              <select
+                className="fridge-select-dropdown"
+                value={mainFridge?.id || ""}
+                onChange={handleFridgeChange}
+              >
+                {fridges.map(f => (
+                  <option key={f.id} value={f.id}>{f.name}</option>
+                ))}
+              </select>
+            ) : (
+              <h1 className="fridge-title">{mainFridge?.name || `${userNickname}의 냉장고`}</h1>
+            )}
+          </div>
           <p className="fridge-subtitle">
             {mainFridge?.description || "등록된 재료를 한눈에 관리해보세요."}
           </p>

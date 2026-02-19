@@ -29,6 +29,23 @@
   font-size: 0.95rem;
 }
 
+.fridge-select-dropdown {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2d3d;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  font-family: inherit;
+  outline: none;
+}
+
+.fridge-select-dropdown:hover {
+  color: #4b5563;
+}
+
 .fridge-logout-button {
   display: flex;
   align-items: center;
@@ -50,19 +67,20 @@
 .fridge-flip-container {
   display: flex;
   justify-content: center;
-  margin-top: 20px;
-  margin-bottom: 20px;
-  perspective: 1500px; /* Gives 3D depth */
+  margin: 20px 0;
+  perspective: 1500px;
   z-index: 10;
+  width: 100%; /* Ensure container takes full width */
 }
 
 .fridge-flip-card {
   width: 100%;
-  max-width: 600px;
-  min-height: 500px; /* Reduced fixed height for responsiveness, or auto */
+  max-width: 440px; /* Adjusted to fit within App.css max-width: 480px comfortably */
+  height: 500px; /* Use fixed height for consistency during flip */
   position: relative;
   transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   transform-style: preserve-3d;
+  margin: 0 auto; /* Horizontal centering factor */
 }
 
 .fridge-flip-card.flipped {
@@ -71,9 +89,11 @@
 
 .fridge-face {
   position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
-  backface-visibility: hidden; /* Hides the back side when flipped */
+  backface-visibility: hidden;
   
   background: #ffffff;
   border-radius: 32px;
@@ -82,6 +102,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  box-sizing: border-box; /* Crucial for width: 100% with padding */
 }
 
 .fridge-face.front {
