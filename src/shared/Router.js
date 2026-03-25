@@ -16,7 +16,6 @@ export default function Router() {
       <Routes>
         {/* 로그인기능 및 홈 */}
         <Route path="/" element={<SignIn />} />
-        {/* 회원가입기능 */}
         <Route path="/signup" element={<SignUp />} />
         <Route path="/nickname" element={<NickName />} />
         <Route path="/refrigerator" element={<Refrigerator />} />
