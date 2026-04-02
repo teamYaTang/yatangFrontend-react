@@ -31,7 +31,7 @@ const Refrigerator = () => {
   const [detailType, setDetailType] = useState(null); // "fridge" | "freezer"
   const [editValues, setEditValues] = useState(null);
 
-  const navigateToIngredient = () => navigate("/ingredient");
+  const navigateToIngredient = () => navigate("/ingredient", { state: { selectedFridgeId: mainFridge?.id } });
   const navigateToRecipe = () => navigate("/complete");
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
@@ -73,6 +73,7 @@ const Refrigerator = () => {
           await refreshItems(main.id);
         }
       } catch (error) {
+        // Todo : 현재 데이터 로딩 에러가 로그인 안된 상태에서 냉장고를 조회하려고 할 때 발생. 알림이 발생하고 로그인 하는 화면으로 바로 이동하도록, 혹은 그냥 알림 없이 바로 로그인화면으로 돌아가도록 수정
         console.error("데이터 로딩 에러:", error);
         alert("데이터를 불러오는데 실패했습니다.");
       } finally {
@@ -185,17 +186,32 @@ const Refrigerator = () => {
         <div className="fridge-header-content">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {fridges.length > 1 ? (
-              <select
-                className="fridge-select-dropdown"
-                value={mainFridge?.id || ""}
-                onChange={handleFridgeChange}
-              >
-                {fridges.map(f => (
-                  <option key={f.id} value={f.id}>{f.name}</option>
-                ))}
-              </select>
+              <div className="fridge-header-title-row">
+                <select
+                  className="fridge-select-dropdown"
+                  value={mainFridge?.id || ""}
+                  onChange={handleFridgeChange}
+                >
+                  {fridges.sort(
+                      (a, b) =>
+                          Number(b.isMain === true) -
+                          Number(a.isMain === true)
+                  )
+                      .map(f => (
+                          <option key={f.id} value={f.id}>{f.name}</option>
+                      ))}
+                </select>
+                {mainFridge?.isMain === true && (
+                  <span className="badge-main" title="메인 냉장고">main</span>
+                )}
+              </div>
             ) : (
-              <h1 className="fridge-title">{mainFridge?.name || `${userNickname}의 냉장고`}</h1>
+              <h1 className="fridge-title">
+                <span>{mainFridge?.name || `${userNickname}의 냉장고`}</span>
+                {mainFridge?.isMain === true && (
+                  <span className="badge-main" title="메인 냉장고">main</span>
+                )}
+              </h1>
             )}
           </div>
           <p className="fridge-subtitle">

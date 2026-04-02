@@ -180,3 +180,36 @@
   color: #94a3b8;
   padding: 20px;
 }
+
+/*.badge-main {*/
+/*  display: inline-flex;*/
+/*  align-items: center;*/
+/*  justify-content: center;*/
+/*  min-width: 22px;*/
+/*  height: 22px;*/
+/*  padding: 0 7px;*/
+/*  border-radius: 999px;*/
+/*  background: linear-gradient(135deg, #4c6ef5, #5ed4f3);*/
+/*  color: #ffffff;*/
+/*  font-size: 10px;*/
+/*  font-weight: 800;*/
+/*  letter-spacing: 0.04em;*/
+/*  text-transform: uppercase;*/
+/*  line-height: 1;*/
+/*  flex-shrink: 0;*/
+/*  box-shadow: 0 2px 8px rgba(76, 110, 245, 0.35);*/
+/*  vertical-align: middle;*/
+/*}*/
+
+.settings-main-only-message {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #e0f2fe;
+  border: 1px solid #bae6fd;
+  color: #0369a1;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  box-sizing: border-box;
+}

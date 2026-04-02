@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { FiArrowLeft, FiUser, FiLock, FiGrid, FiPlus } from "react-icons/fi";
 import { getUserIdFromToken } from "../utils/jwt";
 import { getUserProfile, updateNickname, updatePasswordApi } from "../api/auth";
-import { getUserFridgesApi, createFridgeApi } from "../api/refrigerator";
+import { getUserFridgesApi, createFridgeApi, updateFridgeApi, deleteFridgeApi } from "../api/refrigerator";
 import "../styles/Settings.css";
 
 const Settings = () => {
@@ -26,6 +26,13 @@ const Settings = () => {
     // Fridge State
     const [fridges, setFridges] = useState([]);
     const [newFridgeName, setNewFridgeName] = useState("");
+    const [newFridgeIsMain, setNewFridgeIsMain] = useState(false);
+
+    // Fridge Edit State
+    const [editingFridge, setEditingFridge] = useState(null);
+    const [editFridgeName, setEditFridgeName] = useState("");
+    const [editFridgeDesc, setEditFridgeDesc] = useState("");
+    const [editFridgeIsMain, setEditFridgeIsMain] = useState(false);
 
     const fetchData = useCallback(async () => {
         try {
@@ -96,12 +103,59 @@ const Settings = () => {
             return;
         }
         try {
-            await createFridgeApi(newFridgeName);
+            await createFridgeApi(newFridgeName, newFridgeIsMain);
             alert("냉장고가 추가되었습니다.");
             setNewFridgeName("");
+            setNewFridgeIsMain(false);
             fetchData();
         } catch (error) {
             alert("냉장고 추가 실패: " + error.message);
+        }
+    };
+
+    const openFridgeEdit = (fridge) => {
+        setEditingFridge(fridge.id);
+        setEditFridgeName(fridge.name);
+        setEditFridgeDesc(fridge.description || "");
+        setEditFridgeIsMain(fridge.isMain || false);
+    };
+
+    const cancelFridgeEdit = () => {
+        setEditingFridge(null);
+    };
+
+    const handleUpdateFridge = async (fridgeId) => {
+        if (!editFridgeName.trim()) {
+            alert("냉장고 이름을 입력해주세요.");
+            return;
+        }
+        try {
+            await updateFridgeApi(fridgeId, {
+                name: editFridgeName,
+                description: editFridgeDesc,
+                isMain: editFridgeIsMain
+            });
+            alert("냉장고 정보가 수정되었습니다.");
+            setEditingFridge(null);
+            fetchData();
+        } catch (error) {
+            alert("냉장고 수정 실패: " + error.message);
+        }
+    };
+
+    const handleDeleteFridge = async (fridge) => {
+        if (fridge?.isMain === true) {
+            alert("메인 냉장고는 삭제할 수 없습니다.");
+            return;
+        }
+        if (!window.confirm("정말 냉장고를 삭제하시겠습니까?")) return;
+
+        try {
+            await deleteFridgeApi(fridge.id);
+            alert("냉장고가 삭제되었습니다.");
+            fetchData();
+        } catch (error) {
+            alert(error.message || "냉장고 삭제에 실패했습니다.");
         }
     };
 
@@ -205,25 +259,7 @@ const Settings = () => {
 
             {activeTab === "fridge" && (
                 <div className="settings-section">
-                    {/* Create Fridge Card */}
-                    <div className="settings-card">
-                        <div className="settings-card-title">
-                            <FiPlus /> 냉장고 추가
-                        </div>
-                        <div className="settings-input-group">
-                            <input
-                                className="settings-input"
-                                placeholder="예: 자취방 냉장고"
-                                value={newFridgeName}
-                                onChange={(e) => setNewFridgeName(e.target.value)}
-                            />
-                        </div>
-                        <button className="settings-button" onClick={handleCreateFridge}>
-                            추가하기
-                        </button>
-                    </div>
-
-                    {/* Fridge List Card */}
+                    {/* Fridge List Card — 메인 냉장고가 맨 위에 오도록 목록을 먼저 표시 */}
                     <div className="settings-card">
                         <div className="settings-card-title">
                             <FiGrid /> 내 냉장고 목록
@@ -232,16 +268,125 @@ const Settings = () => {
                             {fridges.length === 0 ? (
                                 <div className="settings-empty-text">보유한 냉장고가 없습니다.</div>
                             ) : (
-                                fridges.map((fridge) => (
-                                    <div key={fridge.id} className="settings-fridge-item">
-                                        <span className="settings-fridge-name">{fridge.name}</span>
-                                        {/* <span className="settings-fridge-date">
-                       {new Date(fridge.createdAt).toLocaleDateString()}
-                    </span> */}
+                                [...fridges]
+                                    .sort(
+                                        (a, b) =>
+                                            Number(b.isMain === true) -
+                                            Number(a.isMain === true)
+                                    )
+                                    .map((fridge) => (
+                                    <div key={fridge.id} className="settings-fridge-item" style={{ display: "flex", flexDirection: "column", gap: "12px", border: "1px solid #e2e8f0", padding: "16px", borderRadius: "12px" }}>
+
+                                        {editingFridge === fridge.id ? (
+                                            <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
+                                                <input
+                                                    className="settings-input"
+                                                    value={editFridgeName}
+                                                    onChange={e => setEditFridgeName(e.target.value)}
+                                                    placeholder="냉장고 이름"
+                                                />
+                                                <input
+                                                    className="settings-input"
+                                                    value={editFridgeDesc}
+                                                    onChange={e => setEditFridgeDesc(e.target.value)}
+                                                    placeholder="냉장고 설명"
+                                                />
+                                                {fridge.isMain === true ? (
+                                                    <div className="settings-main-only-message" role="status">
+                                                        메인 냉장고입니다.
+                                                    </div>
+                                                ) : (
+                                                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                                        <input
+                                                            type="checkbox"
+                                                            id={`editMain-${fridge.id}`}
+                                                            checked={editFridgeIsMain}
+                                                            onChange={e => setEditFridgeIsMain(e.target.checked)}
+                                                            style={{ width: "16px", height: "16px", cursor: "pointer", accentColor: "#4c6ef5" }}
+                                                        />
+                                                        <label htmlFor={`editMain-${fridge.id}`} style={{ fontSize: "0.9rem", color: "#475569", cursor: "pointer", userSelect: "none" }}>
+                                                            이 냉장고를 메인냉장고로 설정
+                                                        </label>
+                                                    </div>
+                                                )}
+                                                <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
+                                                    <button className="settings-button" style={{ background: "#f1f5f9", color: "#475569" }} onClick={cancelFridgeEdit}>
+                                                        취소
+                                                    </button>
+                                                    <button className="settings-button" onClick={() => handleUpdateFridge(fridge.id)}>
+                                                        저장
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: "100%" }}>
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <span className="settings-fridge-name" style={{ fontWeight: 600, color: "#1e293b" }}>{fridge.name}</span>
+                                                        {fridge.isMain === true && (
+                                                            <span className="badge-main" title="메인 냉장고">
+                                                                main
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <span style={{ fontSize: "0.85rem", color: "#64748b" }}>{fridge.description || "설명이 없습니다."}</span>
+                                                </div>
+                                                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                                                    <button
+                                                        className="settings-button"
+                                                        style={{ width: "auto", padding: "6px 16px", marginTop: "0", background: "#f8fafc", color: "#4c6ef5", border: "1px solid #dbeafe" }}
+                                                        onClick={() => openFridgeEdit(fridge)}
+                                                    >
+                                                        수정
+                                                    </button>
+                                                    <button
+                                                        className="settings-button"
+                                                        style={{ width: "auto", padding: "6px 16px", marginTop: "0", background: fridge.isMain === true ? "#f1f5f9" : "#fff", color: fridge.isMain === true ? "#94a3b8" : "#ef4444", border: "1px solid " + (fridge.isMain === true ? "#e2e8f0" : "#fecaca"), boxShadow: "none" }}
+                                                        disabled={fridge.isMain === true}
+                                                        title={fridge.isMain === true ? "메인 냉장고는 삭제할 수 없습니다." : "냉장고 삭제"}
+                                                        onClick={() => handleDeleteFridge(fridge)}
+                                                    >
+                                                        삭제
+                                                    </button>
+                                                </div>
+                                                {/*<button*/}
+                                            </div>
+                                        )}
+
                                     </div>
                                 ))
                             )}
                         </div>
+                    </div>
+
+                    {/* Create Fridge Card */}
+                    <div className="settings-card">
+                        <div className="settings-card-title">
+                            <FiPlus /> 냉장고 추가
+                        </div>
+                        <div className="settings-input-group">
+                            <input
+                                className="settings-input"
+                                placeholder="예: 미니 냉장고"
+                                value={newFridgeName}
+                                onChange={(e) => setNewFridgeName(e.target.value)}
+                            />
+                        </div>
+                        <div className="settings-input-group" style={{ flexDirection: "row", alignItems: "center", gap: "8px" }}>
+                            <input
+                                type="checkbox"
+                                id="isMainCheckbox"
+                                checked={newFridgeIsMain}
+                                onChange={(e) => setNewFridgeIsMain(e.target.checked)}
+                                style={{ width: "16px", height: "16px", cursor: "pointer", accentColor: "#4c6ef5" }}
+                            />
+                            <label htmlFor="isMainCheckbox" style={{ fontSize: "0.9rem", color: "#475569", cursor: "pointer", userSelect: "none" }}>
+                                이 냉장고를 메인냉장고로 설정
+                            </label>
+                        </div>
+                        <button className="settings-button" onClick={handleCreateFridge}>
+                            추가하기
+                        </button>
                     </div>
                 </div>
             )}

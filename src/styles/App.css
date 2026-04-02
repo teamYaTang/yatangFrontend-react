@@ -13,3 +13,36 @@
   box-shadow: 0 0 2rem 0.1rem rgba(0, 0, 0, 0.2);
   font-family: "Noto Sans KR", sans-serif;
 }
+
+/*.badge-main {*/
+/*  display: inline-block;*/
+/*  background-color: #4c6ef5;*/
+/*  color: #fff;*/
+/*  font-size: 0.7rem;*/
+/*  font-weight: bold;*/
+/*  padding: 2px 6px;*/
+/*  border-radius: 10px;*/
+/*  margin-left: 6px;*/
+/*  vertical-align: middle;*/
+/*}*/
+
+ /*메인 냉장고 뱃지 (헤더 옆 작은 원형)*/
+.badge-main {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #4c6ef5, #5ed4f3);
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(76, 110, 245, 0.35);
+  vertical-align: middle;
+}

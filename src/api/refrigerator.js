@@ -17,9 +17,16 @@ export const getMainFridgeApi = async () => {
 };
 
 // 냉장고 생성
-export const createFridgeApi = async (name) => {
+export const createFridgeApi = async (name, isMain) => {
   const userId = ensureUser();
-  const { data } = await apiClient.post(`/fridges?userId=${userId}`, { name });
+  const { data } = await apiClient.post(`/fridges?userId=${userId}`, { name, isMain });
+  return data;
+};
+
+// 냉장고 수정
+export const updateFridgeApi = async (fridgeId, updateData) => {
+  const userId = ensureUser();
+  const { data } = await apiClient.patch(`/fridges/${fridgeId}?userId=${userId}`, updateData);
   return data;
 };
 
@@ -109,6 +116,15 @@ export const deleteFreezerItemApi = async (fridgeId, itemId) => {
   const userId = ensureUser();
   const { data } = await apiClient.delete(
     `/fridges/${fridgeId}/freezer-items/${itemId}?userId=${userId}`,
+  );
+  return data;
+};
+
+// 냉장고 삭제
+export const deleteFridgeApi = async (fridgeId) => {
+  const userId = ensureUser();
+  const { data } = await apiClient.delete(
+    `/fridges/${fridgeId}?userId=${userId}`,
   );
   return data;
 };
