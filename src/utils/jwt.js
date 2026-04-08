@@ -4,10 +4,8 @@ export const getUserIdFromToken = () => {
   if (!token) return null;
 
   try {
-    // JWT는 base64로 인코딩된 3부분으로 구성: header.payload.signature
     const payload = token.split(".")[1];
     const decoded = JSON.parse(atob(payload));
-    // subject에 userId가 저장되어 있음
     return decoded.sub ? parseInt(decoded.sub) : null;
   } catch (error) {
     console.error("JWT 디코딩 에러:", error);
@@ -15,3 +13,5 @@ export const getUserIdFromToken = () => {
   }
 };
 
+// 로그인 여부 확인
+export const isLoggedIn = () => !!localStorage.getItem("accessToken");

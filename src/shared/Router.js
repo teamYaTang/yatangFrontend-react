@@ -12,18 +12,18 @@ import Settings from "../pages/Settings";
 
 export default function Router() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* 로그인기능 및 홈 */}
-        <Route path="/" element={<SignIn />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/nickname" element={<NickName />} />
-        <Route path="/refrigerator" element={<Refrigerator />} />
-        <Route path="/ingredient" element={<Ingredient />} />
-        <Route path="/loading" element={<Loading />} />
-        <Route path="/complete" element={<Complete />} />
-        <Route path="/settings" element={<Settings />} />
-      </Routes>
-    </BrowserRouter>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Refrigerator />} />      {/* 진입점을 냉장고로 변경 */}
+          <Route path="/signin" element={<SignIn />} />       {/* 로그인은 별도 경로로 */}
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/nickname" element={<NickName />} />
+          <Route path="/refrigerator" element={<Refrigerator />} />
+          <Route path="/ingredient" element={<Ingredient />} />
+          <Route path="/loading" element={<Loading />} />
+          <Route path="/complete" element={<Complete />} />
+          <Route path="/settings" element={<Settings />} />
+        </Routes>
+      </BrowserRouter>
   );
 }
