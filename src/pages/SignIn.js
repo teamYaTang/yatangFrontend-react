@@ -6,9 +6,11 @@ import LogoImg from "../assets/LogoImg.png";
 import { signin } from "../api/auth";
 import { hasGuestData, getAllGuestData, clearAllGuestData } from "../utils/storage";
 import { importGuestDataApi } from "../api/refrigerator";
+import { useToast } from "../context/ToastContext";
 
 const SignIn = () => {
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [userid, setUserid] = useState("");
   const [userpw, setUserpw] = useState("");
@@ -49,12 +51,12 @@ const SignIn = () => {
           setShowGuestPrompt(true);
           return;
         }
-        alert("성공적으로 로그인 되었습니다.");
+        toast("로그인되었습니다.");
         navigate("/refrigerator");
       })
       .catch((error) => {
         console.error("로그인 에러:", error);
-        alert(error.message);
+        toast(error.message || "로그인에 실패했습니다.");
       });
   };
 
@@ -64,20 +66,27 @@ const SignIn = () => {
       const guestData = getAllGuestData();
       await importGuestDataApi(guestData);
       clearAllGuestData();
-      alert("기존 기록을 내 기록에 합쳤습니다.");
+      toast("기존 기록을 내 계정에 합쳤습니다.");
       setShowGuestPrompt(false);
       navigate("/refrigerator");
     } catch (error) {
       console.error("게스트 기록 병합 실패:", error);
-      alert(error.message || "기록 병합에 실패했습니다.");
+      toast(error.message || "기록 병합에 실패했습니다.");
     } finally {
       setGuestPromptLoading(false);
     }
   };
 
   const handleGuestStartFresh = () => {
+    if (
+      !window.confirm(
+        "비로그인 상태로 저장한 냉장고·상온보관·재료 기록이 이 기기에서 모두 삭제됩니다. 계속할까요?",
+      )
+    ) {
+      return;
+    }
     clearAllGuestData();
-    alert("게스트 기록을 삭제하고 새로 시작합니다.");
+    toast("게스트 기록을 삭제했습니다.");
     setShowGuestPrompt(false);
     navigate("/refrigerator");
   };

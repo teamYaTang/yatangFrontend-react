@@ -13,6 +13,10 @@ import {
   createLocalFreezerItem,
   updateLocalFreezerItem,
   deleteLocalFreezerItem,
+  getLocalPantryItems,
+  createLocalPantryItem,
+  updateLocalPantryItem,
+  deleteLocalPantryItem,
 } from "../utils/storage";
 
 const getUserId = () => {
@@ -74,9 +78,37 @@ export const deleteFridgeApi = async (fridgeId) => {
 // ───────── 게스트 데이터 마이그레이션 ─────────
 export const importGuestDataApi = async (guestData) => {
   const userId = getUserId();
-  const { data } = await apiClient.post(`/users/${userId}/guest-import`, {
-    fridges: guestData,
-  });
+  const { data } = await apiClient.post(`/users/${userId}/guest-import`, guestData);
+  return data;
+};
+
+// ───────── 상온보관 (사용자당 하나의 목록) ─────────
+
+export const getPantryItemsApi = async () => {
+  if (!isLoggedIn()) return getLocalPantryItems();
+  const userId = getUserId();
+  const { data } = await apiClient.get(`/pantry/items?userId=${userId}`);
+  return data;
+};
+
+export const createPantryItemApi = async (itemData) => {
+  if (!isLoggedIn()) return createLocalPantryItem(itemData);
+  const userId = getUserId();
+  const { data } = await apiClient.post(`/pantry/items?userId=${userId}`, itemData);
+  return data;
+};
+
+export const updatePantryItemApi = async (itemId, itemData) => {
+  if (!isLoggedIn()) return updateLocalPantryItem(itemId, itemData);
+  const userId = getUserId();
+  const { data } = await apiClient.patch(`/pantry/items/${itemId}?userId=${userId}`, itemData);
+  return data;
+};
+
+export const deletePantryItemApi = async (itemId) => {
+  if (!isLoggedIn()) return deleteLocalPantryItem(itemId);
+  const userId = getUserId();
+  const { data } = await apiClient.delete(`/pantry/items/${itemId}?userId=${userId}`);
   return data;
 };
 
@@ -163,6 +195,7 @@ export const getAllItemsAcrossFridgesApi = async () => {
       getLocalFridgeItems(f.id).forEach((item) => {
         rows.push({
           ...item,
+          createdAt: item.createdAt || null,
           itemId: item.id,
           fridgeId: f.id,
           fridgeName: fname,
@@ -172,6 +205,7 @@ export const getAllItemsAcrossFridgesApi = async () => {
       getLocalFreezerItems(f.id).forEach((item) => {
         rows.push({
           ...item,
+          createdAt: item.createdAt || null,
           itemId: item.id,
           fridgeId: f.id,
           fridgeName: fname,
@@ -179,6 +213,16 @@ export const getAllItemsAcrossFridgesApi = async () => {
         });
       });
     }
+    getLocalPantryItems().forEach((item) => {
+      rows.push({
+        ...item,
+        createdAt: item.createdAt || null,
+        itemId: item.id,
+        fridgeId: null,
+        fridgeName: "상온보관",
+        storageType: "상온보관",
+      });
+    });
     rows.sort((a, b) => (a.name || "").localeCompare(b.name || "", "ko"));
     return rows;
   }

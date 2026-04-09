@@ -2,6 +2,7 @@ const KEYS = {
   FRIDGES: "guest_fridges",
   FRIDGE_ITEMS: (fridgeId) => `guest_fridge_items_${fridgeId}`,
   FREEZER_ITEMS: (fridgeId) => `guest_freezer_items_${fridgeId}`,
+  PANTRY: "guest_pantry_items",
 };
 
 // 고유 ID 생성
@@ -62,7 +63,7 @@ export const getLocalFridgeItems = (fridgeId) => {
 
 export const createLocalFridgeItem = (fridgeId, itemData) => {
   const items = getLocalFridgeItems(fridgeId);
-  const newItem = { id: generateId(), ...itemData };
+  const newItem = { id: generateId(), createdAt: new Date().toISOString(), ...itemData };
   items.push(newItem);
   localStorage.setItem(KEYS.FRIDGE_ITEMS(fridgeId), JSON.stringify(items));
   return newItem;
@@ -91,7 +92,7 @@ export const getLocalFreezerItems = (fridgeId) => {
 
 export const createLocalFreezerItem = (fridgeId, itemData) => {
   const items = getLocalFreezerItems(fridgeId);
-  const newItem = { id: generateId(), ...itemData };
+  const newItem = { id: generateId(), createdAt: new Date().toISOString(), ...itemData };
   items.push(newItem);
   localStorage.setItem(KEYS.FREEZER_ITEMS(fridgeId), JSON.stringify(items));
   return newItem;
@@ -111,16 +112,45 @@ export const deleteLocalFreezerItem = (fridgeId, itemId) => {
   localStorage.setItem(KEYS.FREEZER_ITEMS(fridgeId), JSON.stringify(items));
 };
 
+// ───────── 상온보관 (게스트당 하나의 목록) ─────────
+
+export const getLocalPantryItems = () => {
+  const data = localStorage.getItem(KEYS.PANTRY);
+  return data ? JSON.parse(data) : [];
+};
+
+export const createLocalPantryItem = (itemData) => {
+  const items = getLocalPantryItems();
+  const newItem = { id: generateId(), createdAt: new Date().toISOString(), ...itemData };
+  items.push(newItem);
+  localStorage.setItem(KEYS.PANTRY, JSON.stringify(items));
+  return newItem;
+};
+
+export const updateLocalPantryItem = (itemId, itemData) => {
+  const items = getLocalPantryItems();
+  const idx = items.findIndex((i) => i.id === itemId);
+  if (idx === -1) throw new Error("아이템을 찾을 수 없습니다.");
+  items[idx] = { ...items[idx], ...itemData };
+  localStorage.setItem(KEYS.PANTRY, JSON.stringify(items));
+  return items[idx];
+};
+
+export const deleteLocalPantryItem = (itemId) => {
+  const items = getLocalPantryItems().filter((i) => i.id !== itemId);
+  localStorage.setItem(KEYS.PANTRY, JSON.stringify(items));
+};
+
 // ───────── 마이그레이션용 전체 데이터 추출 ─────────
 
-export const getAllGuestData = () => {
-  const fridges = getLocalFridges();
-  return fridges.map((fridge) => ({
+export const getAllGuestData = () => ({
+  fridges: getLocalFridges().map((fridge) => ({
     ...fridge,
     fridgeItems: getLocalFridgeItems(fridge.id),
     freezerItems: getLocalFreezerItems(fridge.id),
-  }));
-};
+  })),
+  pantryItems: getLocalPantryItems(),
+});
 
 // 게스트 데이터 전체 삭제 (로그인 후 마이그레이션 완료 시 호출)
 export const clearAllGuestData = () => {
@@ -130,14 +160,18 @@ export const clearAllGuestData = () => {
     localStorage.removeItem(KEYS.FREEZER_ITEMS(f.id));
   });
   localStorage.removeItem(KEYS.FRIDGES);
+  localStorage.removeItem(KEYS.PANTRY);
 };
 
 export const hasGuestData = () => {
   const fridges = getLocalFridges();
-  return fridges.some(
-    (f) =>
-      getLocalFridgeItems(f.id).length > 0 ||
-      getLocalFreezerItems(f.id).length > 0
+  return (
+    getLocalPantryItems().length > 0 ||
+    fridges.some(
+      (f) =>
+        getLocalFridgeItems(f.id).length > 0 ||
+        getLocalFreezerItems(f.id).length > 0
+    )
   );
 };
 
@@ -167,6 +201,15 @@ export const addGuestCatalogExtra = (name, defaultUnit = "개") => {
     return list;
   }
   list.push({ name: trimmed, defaultUnit: unit });
+  localStorage.setItem(GUEST_CATALOG_EXTRAS, JSON.stringify(list));
+  return list;
+};
+
+/** 직접 추가한 카탈로그 항목 제거 (이름 일치, 대소문자 구분) */
+export const removeGuestCatalogExtra = (name) => {
+  const trimmed = name?.trim();
+  if (!trimmed) return getGuestCatalogExtras();
+  const list = getGuestCatalogExtras().filter((x) => x.name !== trimmed);
   localStorage.setItem(GUEST_CATALOG_EXTRAS, JSON.stringify(list));
   return list;
 };

@@ -4,9 +4,11 @@ import "../styles/SignUp.css";
 
 import { signup } from "../api/auth";
 import apiClient from "../api/apiClient";
+import { useToast } from "../context/ToastContext";
 
 const SignUp = () => {
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [email, setEmail] = useState("");
   const [id, setId] = useState("");
@@ -62,18 +64,18 @@ const SignUp = () => {
       confirmPassword,
     })
       .then(() => {
-        alert("회원가입이 완료되었습니다. 로그인 해주세요!");
+        toast("회원가입이 완료되었습니다. 로그인 해주세요.");
         navigate("/");
       })
-      .catch((error) => alert(error.message));
+      .catch((error) => toast(error.message));
   };
 
   const handleSocialSignup = async (provider) => {
     try {
       const { data } = await apiClient.get(`/oauth2/authorization/${provider}`);
-      alert(data.message || `${provider} 간편 로그인 준비 중입니다.`);
+      toast(data.message || `${provider} 간편 로그인 준비 중입니다.`);
     } catch (error) {
-      alert(
+      toast(
         error.response?.data?.message ||
         "간편 로그인 연동을 준비 중입니다. 잠시만 기다려 주세요.",
       );

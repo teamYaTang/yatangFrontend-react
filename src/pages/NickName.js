@@ -4,9 +4,11 @@ import "../styles/NickName.css";
 
 import { updateNickname } from "../api/auth";
 import { getUserIdFromToken } from "../utils/jwt";
+import { useToast } from "../context/ToastContext";
 
 const NickName = () => {
   const navigate = useNavigate();
+  const toast = useToast();
   const [nickname, setNickname] = useState("");
   const [isValid, setIsValid] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -23,7 +25,7 @@ const NickName = () => {
 
     const userId = getUserIdFromToken();
     if (!userId) {
-      alert("로그인이 필요합니다.");
+      toast("로그인이 필요합니다.");
       navigate("/");
       return;
     }
@@ -31,10 +33,10 @@ const NickName = () => {
     try {
       setLoading(true);
       await updateNickname(userId, nickname);
-      alert("닉네임이 저장되었습니다!");
+      toast("닉네임이 저장되었습니다.");
       navigate("/refrigerator");
     } catch (error) {
-      alert(error.message || "닉네임을 저장하는 중 오류가 발생했습니다.");
+      toast(error.message || "닉네임을 저장하는 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }

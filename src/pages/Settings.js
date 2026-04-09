@@ -4,10 +4,12 @@ import { FiArrowLeft, FiUser, FiLock, FiGrid, FiPlus } from "react-icons/fi";
 import { getUserIdFromToken } from "../utils/jwt";
 import { getUserProfile, updateNickname, updatePasswordApi } from "../api/auth";
 import { getUserFridgesApi, createFridgeApi, updateFridgeApi, deleteFridgeApi } from "../api/refrigerator";
+import { useToast } from "../context/ToastContext";
 import "../styles/Settings.css";
 
 const Settings = () => {
     const navigate = useNavigate();
+    const toast = useToast();
     const userId = getUserIdFromToken();
     const [activeTab, setActiveTab] = useState("profile"); // 'profile' or 'fridge'
     const [loading, setLoading] = useState(false);
@@ -52,64 +54,64 @@ const Settings = () => {
 
     useEffect(() => {
         if (!userId) {
-            alert("로그인이 필요합니다.");
+            toast("로그인이 필요합니다.");
             navigate("/");
             return;
         }
         fetchData();
-    }, [userId, navigate, fetchData]);
+    }, [userId, navigate, fetchData, toast]);
 
     // --- Profile Handlers ---
     const handleNicknameChange = async () => {
         if (!newNickname.trim() || newNickname === profile.nickname) return;
         try {
             await updateNickname(userId, newNickname);
-            alert("닉네임이 변경되었습니다.");
+            toast("닉네임이 변경되었습니다.");
             fetchData();
         } catch (error) {
-            alert(error.message);
+            toast(error.message);
         }
     };
 
     const handlePasswordChange = async () => {
         const { current, new: newPass, confirm } = passwords;
         if (!current || !newPass || !confirm) {
-            alert("모든 필드를 입력해주세요.");
+            toast("모든 필드를 입력해주세요.");
             return;
         }
         if (newPass !== confirm) {
-            alert("새 비밀번호가 일치하지 않습니다.");
+            toast("새 비밀번호가 일치하지 않습니다.");
             return;
         }
         if (newPass.length < 4) {
-            alert("비밀번호는 4자 이상이어야 합니다.");
+            toast("비밀번호는 4자 이상이어야 합니다.");
             return;
         }
 
         try {
             await updatePasswordApi(userId, current, newPass);
-            alert("비밀번호가 변경되었습니다. 다시 로그인해주세요.");
+            toast("비밀번호가 변경되었습니다. 다시 로그인해주세요.");
             localStorage.removeItem("accessToken");
             navigate("/");
         } catch (error) {
-            alert(error.message);
+            toast(error.message);
         }
     };
 
     // --- Fridge Handlers ---
     const handleCreateFridge = async () => {
         if (!newFridgeName.trim()) {
-            alert("냉장고 이름을 입력해주세요.");
+            toast("냉장고 이름을 입력해주세요.");
             return;
         }
         try {
             await createFridgeApi(newFridgeName, newFridgeIsMain);
-            alert("냉장고가 추가되었습니다.");
+            toast("냉장고가 추가되었습니다.");
             setNewFridgeName("");
             setNewFridgeIsMain(false);
             fetchData();
         } catch (error) {
-            alert("냉장고 추가 실패: " + error.message);
+            toast("냉장고 추가 실패: " + error.message);
         }
     };
 
@@ -126,7 +128,7 @@ const Settings = () => {
 
     const handleUpdateFridge = async (fridgeId) => {
         if (!editFridgeName.trim()) {
-            alert("냉장고 이름을 입력해주세요.");
+            toast("냉장고 이름을 입력해주세요.");
             return;
         }
         try {
@@ -135,27 +137,27 @@ const Settings = () => {
                 description: editFridgeDesc,
                 isMain: editFridgeIsMain
             });
-            alert("냉장고 정보가 수정되었습니다.");
+            toast("냉장고 정보가 수정되었습니다.");
             setEditingFridge(null);
             fetchData();
         } catch (error) {
-            alert("냉장고 수정 실패: " + error.message);
+            toast("냉장고 수정 실패: " + error.message);
         }
     };
 
     const handleDeleteFridge = async (fridge) => {
         if (fridge?.isMain === true) {
-            alert("메인 냉장고는 삭제할 수 없습니다.");
+            toast("메인 냉장고는 삭제할 수 없습니다.");
             return;
         }
         if (!window.confirm("정말 냉장고를 삭제하시겠습니까?")) return;
 
         try {
             await deleteFridgeApi(fridge.id);
-            alert("냉장고가 삭제되었습니다.");
+            toast("냉장고가 삭제되었습니다.");
             fetchData();
         } catch (error) {
-            alert(error.message || "냉장고 삭제에 실패했습니다.");
+            toast(error.message || "냉장고 삭제에 실패했습니다.");
         }
     };
 
