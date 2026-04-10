@@ -213,3 +213,93 @@ export const removeGuestCatalogExtra = (name) => {
   localStorage.setItem(GUEST_CATALOG_EXTRAS, JSON.stringify(list));
   return list;
 };
+
+// ───────── 게스트: 장바구니 · 레시피북 (로그인 시 서버로 이전) ─────────
+
+const GUEST_SHOPPING = "yatang_guest_shopping";
+const GUEST_RECIPE_BOOK = "yatang_guest_recipe_book";
+
+export const getGuestShoppingList = () => {
+  const raw = localStorage.getItem(GUEST_SHOPPING);
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveGuestShoppingList = (list) => {
+  localStorage.setItem(GUEST_SHOPPING, JSON.stringify(list));
+  return list;
+};
+
+export const addGuestShoppingBatch = (lines) => {
+  if (!lines?.length) return getGuestShoppingList();
+  const list = getGuestShoppingList();
+  const now = Date.now();
+  lines.forEach((line, i) => {
+    if (!line?.ingredientName?.trim()) return;
+    list.push({
+      id: `gshop-${now}-${i}`,
+      ingredientName: line.ingredientName.trim(),
+      quantityNote: line.quantityNote?.trim() || "",
+      unit: line.unit?.trim() || "",
+      checked: false,
+      createdAt: new Date().toISOString(),
+    });
+  });
+  return saveGuestShoppingList(list);
+};
+
+export const toggleGuestShoppingItem = (id) => {
+  const list = getGuestShoppingList().map((x) =>
+    x.id === id ? { ...x, checked: !x.checked } : x,
+  );
+  return saveGuestShoppingList(list);
+};
+
+export const deleteGuestShoppingItem = (id) => {
+  return saveGuestShoppingList(getGuestShoppingList().filter((x) => x.id !== id));
+};
+
+export const getGuestRecipeBook = () => {
+  const raw = localStorage.getItem(GUEST_RECIPE_BOOK);
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+};
+
+export const addGuestRecipeBook = (recipe) => {
+  const list = getGuestRecipeBook();
+  const id = `grep-${Date.now()}`;
+  const title = recipe?.title?.trim() || "제목 없음";
+  const row = {
+    id,
+    title,
+    servings: recipe?.servings ?? null,
+    cookMinutes: recipe?.cookMinutes ?? null,
+    payloadJson: JSON.stringify(recipe),
+    createdAt: new Date().toISOString(),
+  };
+  list.unshift(row);
+  localStorage.setItem(GUEST_RECIPE_BOOK, JSON.stringify(list));
+  return {
+    id: row.id,
+    title: row.title,
+    servings: row.servings,
+    cookMinutes: row.cookMinutes,
+    createdAt: row.createdAt,
+  };
+};
+
+export const deleteGuestRecipeBook = (id) => {
+  const next = getGuestRecipeBook().filter((x) => x.id !== id);
+  localStorage.setItem(GUEST_RECIPE_BOOK, JSON.stringify(next));
+  return next;
+};

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiLogOut, FiPackage, FiLayers, FiPlusCircle, FiRepeat, FiSettings, FiBox } from "react-icons/fi";
+import { FiLogOut, FiPackage, FiLayers, FiPlusCircle, FiRepeat, FiSettings, FiBox, FiX } from "react-icons/fi";
 import "../styles/Refrigerator.css";
 
 import {
@@ -21,7 +21,7 @@ import {
 import { getUserProfile } from "../api/auth";
 import { getUserIdFromToken, isLoggedIn } from "../utils/jwt";
 import { useToast } from "../context/ToastContext";
-import { ITEM_SORT_OPTIONS, sortItems } from "../utils/itemSort";
+import { ITEM_SORT_OPTIONS, sortItems, normalizeSortKey } from "../utils/itemSort";
 import { formatDdayLabel, formatRegisteredAt, getDaysUntilExpiration, isDdayUrgent } from "../utils/ddayLabel";
 
 const UNIT_OPTIONS = ["개", "팩", "병", "봉지", "캔", "g", "kg", "ml", "L"];
@@ -44,7 +44,7 @@ const Refrigerator = () => {
   const [detailType, setDetailType] = useState(null);
   const [editValues, setEditValues] = useState(null);
   const [moveBusy, setMoveBusy] = useState(false);
-  const [sortKey, setSortKey] = useState(() => localStorage.getItem(LS_FRIDGE_SORT) || "name_asc");
+  const [sortKey, setSortKey] = useState(() => normalizeSortKey(localStorage.getItem(LS_FRIDGE_SORT)));
 
   useEffect(() => {
     localStorage.setItem(LS_FRIDGE_SORT, sortKey);
@@ -298,10 +298,12 @@ const Refrigerator = () => {
           <div className={`fridge-item-icon ${type}`}>
             {type === "fridge" ? <FiPackage /> : type === "freezer" ? <FiLayers /> : <FiBox />}
           </div>
-          <div className="fridge-item-name">{item.name}</div>
-          {dlabel && (
-            <div className={`fridge-item-dday ${urgent ? "fridge-item-dday--urgent" : ""}`}>{dlabel}</div>
-          )}
+          <div className="fridge-item-text-col">
+            <div className="fridge-item-name">{item.name}</div>
+            {dlabel && (
+              <div className={`fridge-item-dday ${urgent ? "fridge-item-dday--urgent" : ""}`}>{dlabel}</div>
+            )}
+          </div>
         </div>
       );
     });
@@ -316,71 +318,74 @@ const Refrigerator = () => {
   return (
     <div className="fridge-page-wrapper fridge-page-with-dock">
       <header className="fridge-header">
-        <div className="fridge-header-content">
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            {fridges.length > 1 ? (
-              <div className="fridge-header-title-row">
-                <select className="fridge-select-dropdown" value={mainFridge?.id || ""} onChange={handleFridgeChange}>
-                  {fridges
-                    .sort((a, b) => Number(b.isMain === true) - Number(a.isMain === true))
-                    .map((f) => (
-                      <option key={f.id} value={f.id}>
-                        {f.name}
-                      </option>
-                    ))}
-                </select>
-                {mainFridge?.isMain === true && (
-                  <span className="badge-main" title="메인 냉장고">
-                    main
-                  </span>
-                )}
-              </div>
+        <div className="fridge-header-top-row">
+          <div className="fridge-header-content">
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              {fridges.length > 1 ? (
+                <div className="fridge-header-title-row">
+                  <select className="fridge-select-dropdown" value={mainFridge?.id || ""} onChange={handleFridgeChange}>
+                    {fridges
+                      .sort((a, b) => Number(b.isMain === true) - Number(a.isMain === true))
+                      .map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {f.name}
+                        </option>
+                      ))}
+                  </select>
+                  {mainFridge?.isMain === true && (
+                    <span className="badge-main" title="메인 냉장고">
+                      main
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <h1 className="fridge-title">
+                  <span>{mainFridge?.name || `${userNickname}의 냉장고`}</span>
+                  {mainFridge?.isMain === true && (
+                    <span className="badge-main" title="메인 냉장고">
+                      main
+                    </span>
+                  )}
+                </h1>
+              )}
+            </div>
+          </div>
+          <div className="fridge-header-actions" style={{ display: "flex", gap: "8px" }}>
+            <button className="fridge-logout-button" onClick={() => navigate("/settings")} title="설정">
+              <FiSettings size={18} />
+            </button>
+            {isLoggedIn() ? (
+              <button className="fridge-logout-button" onClick={handleLogout}>
+                <FiLogOut size={18} />
+              </button>
             ) : (
-              <h1 className="fridge-title">
-                <span>{mainFridge?.name || `${userNickname}의 냉장고`}</span>
-                {mainFridge?.isMain === true && (
-                  <span className="badge-main" title="메인 냉장고">
-                    main
-                  </span>
-                )}
-              </h1>
+              <button className="fridge-logout-button" onClick={() => navigate("/signin")}>
+                로그인
+              </button>
             )}
           </div>
-          <p className="fridge-subtitle">{mainFridge?.description || "등록된 재료를 한눈에 관리해보세요."}</p>
         </div>
-        <div style={{ display: "flex", gap: "8px" }}>
-          <button className="fridge-logout-button" onClick={() => navigate("/settings")} title="설정">
-            <FiSettings size={18} />
-          </button>
-          {isLoggedIn() ? (
-            <button className="fridge-logout-button" onClick={handleLogout}>
-              <FiLogOut size={18} />
-            </button>
-          ) : (
-            <button className="fridge-logout-button" onClick={() => navigate("/signin")}>
-              로그인
-            </button>
-          )}
+        <div className="fridge-subtitle-sort-row">
+          <p className="fridge-subtitle">{mainFridge?.description || "등록된 재료를 한눈에 관리해보세요."}</p>
+          <div className="fridge-sort-toolbar fridge-sort-toolbar--inline fridge-sort-toolbar--compact">
+            <label className="fridge-sort-label" htmlFor="fridge-sort-select">
+              정렬
+            </label>
+            <select
+              id="fridge-sort-select"
+              className="fridge-sort-select fridge-sort-select--compact"
+              value={sortKey}
+              onChange={(e) => setSortKey(e.target.value)}
+            >
+              {ITEM_SORT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </header>
-
-      <div className="fridge-sort-toolbar fridge-sort-toolbar--compact">
-        <label className="fridge-sort-label" htmlFor="fridge-sort-select">
-          정렬
-        </label>
-        <select
-          id="fridge-sort-select"
-          className="fridge-sort-select fridge-sort-select--compact"
-          value={sortKey}
-          onChange={(e) => setSortKey(e.target.value)}
-        >
-          {ITEM_SORT_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </div>
 
       <div className="fridge-flip-container">
         <div className={`fridge-flip-card ${isFlipped ? "flipped" : ""}`}>
@@ -483,7 +488,7 @@ const Refrigerator = () => {
             재료 추가 / 수정
           </button>
           <button className="fridge-secondary-button" type="button" onClick={navigateToRecipe}>
-            메뉴 추천 받기
+            AI 레시피 · 장바구니
           </button>
         </div>
       </div>
@@ -491,7 +496,12 @@ const Refrigerator = () => {
       {detailItem && editValues && (
         <div className="fridge-modal-backdrop" onClick={closeDetail}>
           <div className="fridge-modal" onClick={(e) => e.stopPropagation()}>
-            <h2 className="fridge-modal-title">{modalTitle}</h2>
+            <div className="fridge-modal-header">
+              <h2 className="fridge-modal-title">{modalTitle}</h2>
+              <button type="button" className="fridge-modal-close-x" onClick={closeDetail} aria-label="닫기">
+                <FiX size={20} />
+              </button>
+            </div>
             <div className="fridge-modal-field">
               <label className="fridge-modal-label">등록일</label>
               <input

@@ -11,7 +11,7 @@ const Settings = () => {
     const navigate = useNavigate();
     const toast = useToast();
     const userId = getUserIdFromToken();
-    const [activeTab, setActiveTab] = useState("profile"); // 'profile' or 'fridge'
+    const [activeTab, setActiveTab] = useState("fridge"); // 'profile' | 'fridge' — 첫 탭이 냉장고 관리
     const [loading, setLoading] = useState(false);
 
     // Profile State
@@ -176,88 +176,18 @@ const Settings = () => {
 
             <div className="settings-tabs">
                 <button
-                    className={`settings-tab ${activeTab === "profile" ? "active" : ""}`}
-                    onClick={() => setActiveTab("profile")}
-                >
-                    내 정보
-                </button>
-                <button
                     className={`settings-tab ${activeTab === "fridge" ? "active" : ""}`}
                     onClick={() => setActiveTab("fridge")}
                 >
                     냉장고 관리
                 </button>
+                <button
+                    className={`settings-tab ${activeTab === "profile" ? "active" : ""}`}
+                    onClick={() => setActiveTab("profile")}
+                >
+                    내 정보
+                </button>
             </div>
-
-            {activeTab === "profile" && (
-                <div className="settings-section">
-                    {/* Default Info Card */}
-                    <div className="settings-card">
-                        <div className="settings-card-title">
-                            <FiUser /> 기본 정보
-                        </div>
-                        <div className="settings-input-group">
-                            <label className="settings-label">이메일</label>
-                            <input
-                                className="settings-input"
-                                value={profile.email}
-                                disabled
-                                style={{ background: "#f1f5f9", cursor: "default" }}
-                            />
-                        </div>
-
-                        <div className="settings-input-group">
-                            <label className="settings-label">닉네임</label>
-                            <input
-                                className="settings-input"
-                                value={newNickname}
-                                onChange={(e) => setNewNickname(e.target.value)}
-                                placeholder="새 닉네임 입력"
-                            />
-                        </div>
-                        <button
-                            className="settings-button"
-                            onClick={handleNicknameChange}
-                            disabled={newNickname === profile.nickname}
-                        >
-                            닉네임 변경
-                        </button>
-                    </div>
-
-                    {/* Password Card */}
-                    <div className="settings-card">
-                        <div className="settings-card-title">
-                            <FiLock /> 비밀번호 변경
-                        </div>
-                        <div className="settings-input-group">
-                            <input
-                                className="settings-input"
-                                type="password"
-                                placeholder="현재 비밀번호"
-                                value={passwords.current}
-                                onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-                            />
-                            <input
-                                className="settings-input"
-                                type="password"
-                                placeholder="새 비밀번호"
-                                value={passwords.new}
-                                onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
-                            />
-                            <input
-                                className="settings-input"
-                                type="password"
-                                placeholder="새 비밀번호 확인"
-                                value={passwords.confirm}
-                                onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-                            />
-                        </div>
-                        <button className="settings-button" onClick={handlePasswordChange}>
-                            비밀번호 변경하기
-                        </button>
-                    </div>
-                </div>
-            )}
 
             {activeTab === "fridge" && (
                 <div className="settings-section">
@@ -388,6 +318,76 @@ const Settings = () => {
                         </div>
                         <button className="settings-button" onClick={handleCreateFridge}>
                             추가하기
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === "profile" && (
+                <div className="settings-section">
+                    {/* Default Info Card */}
+                    <div className="settings-card">
+                        <div className="settings-card-title">
+                            <FiUser /> 기본 정보
+                        </div>
+                        <div className="settings-input-group">
+                            <label className="settings-label">이메일</label>
+                            <input
+                                className="settings-input"
+                                value={profile.email}
+                                disabled
+                                style={{ background: "#f1f5f9", cursor: "default" }}
+                            />
+                        </div>
+
+                        <div className="settings-input-group">
+                            <label className="settings-label">닉네임</label>
+                            <input
+                                className="settings-input"
+                                value={newNickname}
+                                onChange={(e) => setNewNickname(e.target.value)}
+                                placeholder="새 닉네임 입력"
+                            />
+                        </div>
+                        <button
+                            className="settings-button"
+                            onClick={handleNicknameChange}
+                            disabled={newNickname === profile.nickname}
+                        >
+                            닉네임 변경
+                        </button>
+                    </div>
+
+                    {/* Password Card */}
+                    <div className="settings-card">
+                        <div className="settings-card-title">
+                            <FiLock /> 비밀번호 변경
+                        </div>
+                        <div className="settings-input-group">
+                            <input
+                                className="settings-input"
+                                type="password"
+                                placeholder="현재 비밀번호"
+                                value={passwords.current}
+                                onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+                            />
+                            <input
+                                className="settings-input"
+                                type="password"
+                                placeholder="새 비밀번호"
+                                value={passwords.new}
+                                onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
+                            />
+                            <input
+                                className="settings-input"
+                                type="password"
+                                placeholder="새 비밀번호 확인"
+                                value={passwords.confirm}
+                                onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+                            />
+                        </div>
+                        <button className="settings-button" onClick={handlePasswordChange}>
+                            비밀번호 변경하기
                         </button>
                     </div>
                 </div>

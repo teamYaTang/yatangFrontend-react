@@ -28,9 +28,10 @@ import { getUserProfile } from "../api/auth";
 import { getUserIdFromToken, isLoggedIn } from "../utils/jwt";
 import { getGuestCatalogExtras, addGuestCatalogExtra, removeGuestCatalogExtra } from "../utils/storage";
 import { useToast } from "../context/ToastContext";
-import { ITEM_SORT_OPTIONS, sortItems } from "../utils/itemSort";
+import { ITEM_SORT_OPTIONS, sortItems, normalizeSortKey } from "../utils/itemSort";
 import { formatRegisteredAt } from "../utils/ddayLabel";
 import { INGREDIENT_CATALOG_CATEGORIES } from "../constants/ingredientCatalogCategories";
+import { CatalogIngredientGlyph } from "../constants/ingredientCatalogVisuals";
 
 const UNIT_PRESETS = ["개", "팩", "병", "봉지", "캔", "g", "kg", "ml", "L"];
 
@@ -75,7 +76,7 @@ const Ingredient = () => {
   const [allItems, setAllItems] = useState([]);
 
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem(LS_ING_TAB) || "fridge");
-  const [sortKey, setSortKey] = useState(() => localStorage.getItem(LS_ING_SORT) || "name_asc");
+  const [sortKey, setSortKey] = useState(() => normalizeSortKey(localStorage.getItem(LS_ING_SORT)));
 
   const [itemName, setItemName] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -951,9 +952,9 @@ const Ingredient = () => {
                   main
                 </span>
               )}
-            <button type="button" className="ingredient-catalog-open-button" onClick={openCatalog}>
-              <FiPlus size={16} /> 재료 추가
-            </button>
+            {/*<button type="button" className="ingredient-catalog-open-button" onClick={openCatalog}>*/}
+            {/*  <FiPlus size={16} /> 재료 추가*/}
+            {/*</button>*/}
           </div>
         </div>
       </div>
@@ -987,24 +988,6 @@ const Ingredient = () => {
         >
           전체 보기
         </button>
-      </div>
-
-      <div className="ingredient-sort-toolbar ingredient-sort-toolbar--compact">
-        <label className="ingredient-sort-label" htmlFor="ingredient-sort-select">
-          정렬
-        </label>
-        <select
-          id="ingredient-sort-select"
-          className="ingredient-sort-select ingredient-sort-select--compact"
-          value={sortKey}
-          onChange={(e) => setSortKey(e.target.value)}
-        >
-          {ITEM_SORT_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
       </div>
 
       {bulkSelected.size > 0 && (
@@ -1134,13 +1117,32 @@ const Ingredient = () => {
 
         <div className="ingredient-card-base ingredient-list-card">
           <div className="ingredient-list-header">
-            <h2 className="ingredient-card-title">
-              {activeTab === "fridge" && "현재 냉장실 재료"}
-              {activeTab === "freezer" && "현재 냉동실 재료"}
-              {activeTab === "pantry" && "상온보관 재료"}
-              {activeTab === "all" && "전체 재료"}
-            </h2>
-            <span className="ingredient-chip">{currentItems.length}개</span>
+            <div className="ingredient-list-header-left">
+              <h2 className="ingredient-card-title">
+                {activeTab === "fridge" && "현재 냉장실 재료"}
+                {activeTab === "freezer" && "현재 냉동실 재료"}
+                {activeTab === "pantry" && "상온보관 재료"}
+                {activeTab === "all" && "전체 재료"}
+              </h2>
+              <span className="ingredient-chip">{currentItems.length}개</span>
+            </div>
+            <div className="ingredient-list-header-sort">
+              {/*<label className="ingredient-sort-label" htmlFor="ingredient-sort-select">*/}
+              {/*  정렬*/}
+              {/*</label>*/}
+              <select
+                id="ingredient-sort-select"
+                className="ingredient-sort-select ingredient-sort-select--compact"
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value)}
+              >
+                {ITEM_SORT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           {currentItems.length === 0 ? (
             <div className="ingredient-empty-state">등록된 재료가 없습니다.</div>
@@ -1332,25 +1334,26 @@ const Ingredient = () => {
               ))}
             </div>
             <div className="ingredient-catalog-target-row">
-              {catalogTargetStorage !== "pantry" && (
-                <label>
-                  냉장고
-                  <select
-                    className="ingredient-select"
-                    value={catalogTargetFridgeId != null ? String(catalogTargetFridgeId) : ""}
-                    onChange={(e) => setCatalogTargetFridgeId(e.target.value)}
-                  >
-                    {fridges.map((f) => (
-                      <option key={f.id} value={String(f.id)}>
-                        {f.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              {catalogTargetStorage === "pantry" && (
-                <p className="ingredient-catalog-pantry-note">상온보관은 계정(또는 이 기기)당 한 곳입니다.</p>
-              )}
+              <label>
+                냉장고
+                <select
+                  className="ingredient-select"
+                  disabled={catalogTargetStorage === "pantry"}
+                  value={catalogTargetFridgeId != null ? String(catalogTargetFridgeId) : ""}
+                  onChange={(e) => setCatalogTargetFridgeId(e.target.value)}
+                  title={
+                    catalogTargetStorage === "pantry"
+                      ? "상온보관 추가 시 냉장고 선택은 적용되지 않습니다."
+                      : undefined
+                  }
+                >
+                  {fridges.map((f) => (
+                    <option key={f.id} value={String(f.id)}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <div className="ingredient-catalog-storage-toggle">
                 <label>
                   <input
@@ -1426,6 +1429,13 @@ const Ingredient = () => {
                   const rowKey = row.id != null ? String(row.id) : sk;
                   return (
                     <div key={rowKey} className="ingredient-catalog-row">
+                      <div className="ingredient-catalog-glyph-wrap" aria-hidden>
+                        <CatalogIngredientGlyph
+                          name={row.name}
+                          category={row.category}
+                          custom={row.custom}
+                        />
+                      </div>
                       <label className="ingredient-catalog-row-label">
                         <input
                           type="checkbox"

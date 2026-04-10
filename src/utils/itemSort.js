@@ -1,13 +1,21 @@
-/** @typedef {'name_asc'|'name_desc'|'created_asc'|'created_desc'|'exp_asc'|'exp_desc'} ItemSortKey */
+/** @typedef {'name_asc'|'created_asc'|'created_desc'|'exp_asc'} ItemSortKey */
 
 export const ITEM_SORT_OPTIONS = [
-  { value: "name_desc", label: "이름▼" },
-  { value: "name_asc", label: "이름▲" },
-  { value: "created_desc", label: "등록일▼" },
-  { value: "created_asc", label: "등록일▲" },
-  { value: "exp_desc", label: "소비기한▼" },
-  { value: "exp_asc", label: "소비기한▲" },
+  { value: "created_desc", label: "최근등록순" },
+  { value: "exp_asc", label: "소비기한순" },
+  { value: "name_asc", label: "이름순" },
+  { value: "created_asc", label: "오래된순" },
 ];
+
+const VALID_SORT_KEYS = new Set(["name_asc", "exp_asc", "created_asc", "created_desc"]);
+
+/** 예전 키(name_desc 등)를 새 옵션으로 맞춥니다. */
+export function normalizeSortKey(key) {
+  if (key != null && VALID_SORT_KEYS.has(key)) return key;
+  if (key === "name_desc") return "name_asc";
+  if (key === "exp_desc") return "exp_asc";
+  return "name_asc";
+}
 
 function parseCreatedMs(item) {
   if (!item?.createdAt) return 0;
@@ -37,10 +45,10 @@ export function sortItems(items, sortKey) {
   const cmpStr = (a, b) => String(a || "").localeCompare(String(b || ""), "ko");
   const cmpNum = (a, b) => (a ?? 0) - (b ?? 0);
 
+  const key = normalizeSortKey(sortKey);
+
   arr.sort((a, b) => {
-    switch (sortKey) {
-      case "name_desc":
-        return cmpStr(b.name, a.name);
+    switch (key) {
       case "created_asc":
         return cmpNum(parseCreatedMs(a), parseCreatedMs(b));
       case "created_desc":
@@ -52,14 +60,6 @@ export function sortItems(items, sortKey) {
         if (ea == null) return 1;
         if (eb == null) return -1;
         return ea - eb;
-      }
-      case "exp_desc": {
-        const ea = expSortValue(a);
-        const eb = expSortValue(b);
-        if (ea == null && eb == null) return cmpStr(a.name, b.name);
-        if (ea == null) return 1;
-        if (eb == null) return -1;
-        return eb - ea;
       }
       case "name_asc":
       default:

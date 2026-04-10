@@ -169,6 +169,27 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ingredient-list-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ingredient-list-header-left .ingredient-card-title {
+  margin: 0;
+}
+
+.ingredient-list-header-sort {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .ingredient-chip {
@@ -432,7 +453,7 @@
   cursor: pointer;
   font-weight: 600;
   color: #475569;
-  font-size: 0.95rem;
+  font-size: 0.8rem;
 }
 
 .ingredient-manual-form-inner {
@@ -496,13 +517,6 @@
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 4px;
-}
-
-.ingredient-catalog-pantry-note {
-  margin: 0;
-  font-size: 0.85rem;
-  color: #64748b;
-  flex: 1 1 100%;
 }
 
 .ingredient-move-storage-button {
@@ -684,6 +698,28 @@
   color: #94a3b8;
 }
 
+.ingredient-catalog-glyph-wrap {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #eef2ff;
+}
+
+.ingredient-catalog-glyph-icon {
+  font-size: 1.35rem;
+  color: #4c6ef5;
+}
+
+.ingredient-catalog-glyph-img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
 .ingredient-catalog-row {
   display: flex;
   align-items: center;
@@ -861,13 +897,19 @@
 }
 
 .ingredient-sort-select--compact {
-  min-width: auto;
-  max-width: 140px;
-  padding: 4px 8px;
-  font-size: 0.78rem;
+  min-width: 0;
+  max-width: min(48vw, 160px);
+  padding: 3px 8px;
+  font-size: 0.76rem;
   border-radius: 8px;
   border-color: #e2e8f0;
   color: #64748b;
+}
+
+.ingredient-select:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: #f1f5f9;
 }
 
 .ingredient-bulk-bar {
