@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiLogOut, FiPackage, FiLayers, FiPlusCircle, FiRepeat, FiSettings, FiBox, FiX } from "react-icons/fi";
+import { FiPackage, FiLayers, FiPlusCircle, FiRepeat, FiSettings, FiBox, FiX } from "react-icons/fi";
 import "../styles/Refrigerator.css";
 
 import {
@@ -27,6 +27,12 @@ import { formatDdayLabel, formatRegisteredAt, getDaysUntilExpiration, isDdayUrge
 const UNIT_OPTIONS = ["개", "팩", "병", "봉지", "캔", "g", "kg", "ml", "L"];
 const LS_FRIDGE_SORT = "yatang_fridge_sort";
 
+/** 셀렉트 박스 너비 기준: 이름이 이 글자 수를 넘으면 잘린 너비로 측정 */
+const FRIDGE_SELECT_NAME_MAX_CHARS = 14;
+/** 텍스트 오른쪽: 커스텀 화살표(12px) + 최소 간격 — 브라우저 기본 화살표 여백보다 좁게 */
+const FRIDGE_SELECT_ARROW_PAD_PX = 14;
+const FRIDGE_SELECT_MIN_WIDTH_PX = 64;
+
 const Refrigerator = () => {
   const navigate = useNavigate();
   const toast = useToast();
@@ -46,6 +52,24 @@ const Refrigerator = () => {
   const [moveBusy, setMoveBusy] = useState(false);
   const [sortKey, setSortKey] = useState(() => normalizeSortKey(localStorage.getItem(LS_FRIDGE_SORT)));
 
+  const fridgeSelectMeasureRef = useRef(null);
+  const [fridgeSelectWidthPx, setFridgeSelectWidthPx] = useState(null);
+
+  useLayoutEffect(() => {
+    const span = fridgeSelectMeasureRef.current;
+    if (!span || !mainFridge) {
+      setFridgeSelectWidthPx(null);
+      return;
+    }
+    const raw = (mainFridge.name || "").trim() || "냉장고";
+    const capped =
+      raw.length > FRIDGE_SELECT_NAME_MAX_CHARS ? raw.slice(0, FRIDGE_SELECT_NAME_MAX_CHARS) : raw;
+    span.textContent = capped;
+    const textW = span.offsetWidth;
+    const w = Math.max(FRIDGE_SELECT_MIN_WIDTH_PX, textW + FRIDGE_SELECT_ARROW_PAD_PX);
+    setFridgeSelectWidthPx(w);
+  }, [mainFridge?.id, mainFridge?.name]);
+
   useEffect(() => {
     localStorage.setItem(LS_FRIDGE_SORT, sortKey);
   }, [sortKey]);
@@ -57,13 +81,6 @@ const Refrigerator = () => {
   const navigateToIngredient = () =>
     navigate("/ingredient", { state: { selectedFridgeId: mainFridge?.id, fromRefrigerator: true } });
   const navigateToRecipe = () => navigate("/complete");
-
-  const handleLogout = () => {
-    if (!window.confirm("로그아웃할까요?")) return;
-    localStorage.removeItem("accessToken");
-    toast("로그아웃되었습니다.");
-    navigate("/");
-  };
 
   const refreshItems = async (targetFridgeId) => {
     const [fridgeData, freezerData] = await Promise.all([
@@ -121,6 +138,15 @@ const Refrigerator = () => {
       await refreshItems(selected.id);
       setLoading(false);
     }
+  };
+
+  const handleFridgeSelectChange = async (e) => {
+    const v = e.target.value;
+    if (v === "__manage__") {
+      navigate("/settings", { state: { settingsTab: "fridge" } });
+      return;
+    }
+    await handleFridgeChange(e);
   };
 
   const totalItems = useMemo(
@@ -323,7 +349,15 @@ const Refrigerator = () => {
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               {fridges.length > 1 ? (
                 <div className="fridge-header-title-row">
-                  <select className="fridge-select-dropdown" value={mainFridge?.id || ""} onChange={handleFridgeChange}>
+                  <span ref={fridgeSelectMeasureRef} className="fridge-select-measure" aria-hidden />
+                  <select
+                    className="fridge-select-dropdown"
+                    value={mainFridge?.id || ""}
+                    onChange={handleFridgeSelectChange}
+                    style={
+                      fridgeSelectWidthPx != null ? { width: fridgeSelectWidthPx, maxWidth: "100%" } : undefined
+                    }
+                  >
                     {fridges
                       .sort((a, b) => Number(b.isMain === true) - Number(a.isMain === true))
                       .map((f) => (
@@ -331,6 +365,14 @@ const Refrigerator = () => {
                           {f.name}
                         </option>
                       ))}
+                    {isLoggedIn() && (
+                      <>
+                        <option disabled value="__sep__">
+                          ───────────
+                        </option>
+                        <option value="__manage__">냉장고 관리하기</option>
+                      </>
+                    )}
                   </select>
                   {mainFridge?.isMain === true && (
                     <span className="badge-main" title="메인 냉장고">
@@ -346,6 +388,15 @@ const Refrigerator = () => {
                       main
                     </span>
                   )}
+                  {isLoggedIn() && (
+                    <button
+                      type="button"
+                      className="fridge-inline-manage"
+                      onClick={() => navigate("/settings", { state: { settingsTab: "fridge" } })}
+                    >
+                      냉장고 관리하기
+                    </button>
+                  )}
                 </h1>
               )}
             </div>
@@ -354,11 +405,7 @@ const Refrigerator = () => {
             <button className="fridge-logout-button" onClick={() => navigate("/settings")} title="설정">
               <FiSettings size={18} />
             </button>
-            {isLoggedIn() ? (
-              <button className="fridge-logout-button" onClick={handleLogout}>
-                <FiLogOut size={18} />
-              </button>
-            ) : (
+            {!isLoggedIn() && (
               <button className="fridge-logout-button" onClick={() => navigate("/signin")}>
                 로그인
               </button>

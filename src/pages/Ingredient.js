@@ -990,17 +990,17 @@ const Ingredient = () => {
         </button>
       </div>
 
-      {bulkSelected.size > 0 && (
-        <div className="ingredient-bulk-bar">
-          <span className="ingredient-bulk-count">{bulkSelected.size}개 선택됨</span>
-          <button type="button" className="ingredient-bulk-delete" onClick={handleBulkDelete}>
-            선택 항목 삭제
-          </button>
-          <button type="button" className="ingredient-bulk-clear" onClick={() => setBulkSelected(new Set())}>
-            선택 해제
-          </button>
-        </div>
-      )}
+      {/*{bulkSelected.size > 0 && (*/}
+      {/*  <div className="ingredient-bulk-bar">*/}
+      {/*    <span className="ingredient-bulk-count">{bulkSelected.size}개 선택됨</span>*/}
+      {/*    <button type="button" className="ingredient-bulk-delete" onClick={handleBulkDelete}>*/}
+      {/*      선택 항목 삭제*/}
+      {/*    </button>*/}
+      {/*    <button type="button" className="ingredient-bulk-clear" onClick={() => setBulkSelected(new Set())}>*/}
+      {/*      선택 해제*/}
+      {/*    </button>*/}
+      {/*  </div>*/}
+      {/*)}*/}
 
       <div className="ingredient-cards-grid">
         {activeTab !== "all" && (
@@ -1113,6 +1113,18 @@ const Ingredient = () => {
               새 재료는 <strong>냉장실·냉동실·상온보관</strong> 탭에서 <strong>재료 추가</strong>를 이용해주세요.
             </p>
           </div>
+        )}
+
+        {bulkSelected.size > 0 && (
+            <div className="ingredient-bulk-bar">
+              <span className="ingredient-bulk-count">{bulkSelected.size}개 선택됨</span>
+              <button type="button" className="ingredient-bulk-delete" onClick={handleBulkDelete}>
+                선택 항목 삭제
+              </button>
+              <button type="button" className="ingredient-bulk-clear" onClick={() => setBulkSelected(new Set())}>
+                선택 해제
+              </button>
+            </div>
         )}
 
         <div className="ingredient-card-base ingredient-list-card">

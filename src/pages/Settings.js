@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { FiArrowLeft, FiUser, FiLock, FiGrid, FiPlus } from "react-icons/fi";
 import { getUserIdFromToken } from "../utils/jwt";
 import { getUserProfile, updateNickname, updatePasswordApi } from "../api/auth";
@@ -9,6 +9,7 @@ import "../styles/Settings.css";
 
 const Settings = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const toast = useToast();
     const userId = getUserIdFromToken();
     const [activeTab, setActiveTab] = useState("fridge"); // 'profile' | 'fridge' — 첫 탭이 냉장고 관리
@@ -61,6 +62,13 @@ const Settings = () => {
         fetchData();
     }, [userId, navigate, fetchData, toast]);
 
+    useEffect(() => {
+        const t = location.state?.settingsTab;
+        if (t === "profile" || t === "fridge") {
+            setActiveTab(t);
+        }
+    }, [location.state]);
+
     // --- Profile Handlers ---
     const handleNicknameChange = async () => {
         if (!newNickname.trim() || newNickname === profile.nickname) return;
@@ -71,6 +79,13 @@ const Settings = () => {
         } catch (error) {
             toast(error.message);
         }
+    };
+
+    const handleLogout = () => {
+        if (!window.confirm("로그아웃할까요?")) return;
+        localStorage.removeItem("accessToken");
+        toast("로그아웃되었습니다.");
+        navigate("/");
     };
 
     const handlePasswordChange = async () => {
@@ -388,6 +403,16 @@ const Settings = () => {
                         </div>
                         <button className="settings-button" onClick={handlePasswordChange}>
                             비밀번호 변경하기
+                        </button>
+                    </div>
+
+                    <div className="settings-card settings-card--logout">
+                        <button
+                            type="button"
+                            className="settings-logout-text"
+                            onClick={handleLogout}
+                        >
+                            로그아웃
                         </button>
                     </div>
                 </div>

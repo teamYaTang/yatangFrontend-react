@@ -38,6 +38,14 @@ export const addShoppingBatchApi = async (lines) => {
   return data;
 };
 
+/** 장바구니 한 줄 추가 (직접 담기) */
+export const addShoppingItemApi = async (line) => {
+  if (!isLoggedIn()) return addGuestShoppingBatch([line]);
+  const userId = getUserId();
+  const { data } = await apiClient.post(`/shopping-list?userId=${userId}`, line);
+  return data;
+};
+
 export const toggleShoppingItemApi = async (itemId) => {
   if (!isLoggedIn()) return toggleGuestShoppingItem(itemId);
   const userId = getUserId();

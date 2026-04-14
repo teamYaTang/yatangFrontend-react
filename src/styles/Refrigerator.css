@@ -129,11 +129,46 @@
   width: 100%;
 }
 
+.fridge-header-content {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .fridge-header-title-row {
+  position: relative;
   display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  min-width: 0;
+  max-width: 50%;
+}
+
+.fridge-header-title-row .fridge-select-dropdown {
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fridge-select-measure {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  white-space: nowrap;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: inherit;
+  line-height: 1.2;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.fridge-header-title-row .badge-main {
+  flex-shrink: 0;
 }
 
 
@@ -146,6 +181,22 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.fridge-inline-manage {
+  margin-left: 4px;
+  border: none;
+  background: transparent;
+  color: #4c6ef5;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 2px 4px;
+}
+
+.fridge-inline-manage:hover {
+  color: #364fc7;
 }
 
 .fridge-subtitle-sort-row {

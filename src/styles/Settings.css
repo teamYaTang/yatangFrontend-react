@@ -74,6 +74,29 @@
   gap: 24px;
 }
 
+.settings-card--logout {
+  background: transparent;
+  box-shadow: none;
+  padding: 8px 0 0;
+}
+
+.settings-logout-text {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 12px 8px;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.settings-logout-text:hover {
+  color: #64748b;
+}
+
 .settings-card {
   background: #ffffff;
   border-radius: 20px;

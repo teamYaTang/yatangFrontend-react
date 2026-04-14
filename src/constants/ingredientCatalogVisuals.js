@@ -30,7 +30,7 @@ import { FiAnchor, FiDroplet, FiPackage, FiPlusCircle } from "react-icons/fi";
 /** @type {Record<string, string>} 재료 이름(카탈로그와 동일) → public 기준 이미지 URL */
 export const INGREDIENT_IMAGE_OVERRIDES = {
   // 예시 (파일 넣은 뒤 주석 해제):
-  // 김치: `${process.env.PUBLIC_URL}/ingredient-icons/kimchi.png`,
+  양파: `${process.env.PUBLIC_URL}/ingredient-icons/onion.png`,
 };
 
 const CATEGORY_ICON = {
