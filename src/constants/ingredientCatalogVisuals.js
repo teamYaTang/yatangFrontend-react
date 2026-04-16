@@ -1,14 +1,13 @@
 /**
  * 재료(카탈로그) 표시용 아이콘·이미지
  *
- * ── 이미지로 바꾸고 싶을 때 ──
- * 1) public/ingredient-icons/ 폴더에 PNG/WebP 등을 넣습니다. (예: kimchi.png)
- * 2) 아래 INGREDIENT_IMAGE_OVERRIDES 에 재료 이름(정확히 동일) → URL 을 추가합니다.
- *    예: 김치: `${process.env.PUBLIC_URL}/ingredient-icons/kimchi.png`
- * 3) 빌드 후 경로는 보통 /ingredient-icons/kimchi.png 로 접근됩니다.
+ * 우선순위: 사용자 업로드 URL → 백엔드 카탈로그 iconImageFile(영문 파일명) → 아래 INGREDIENT_IMAGE_OVERRIDES(로컬 폴백) → 분류 아이콘
  *
- * 이름별 오버라이드가 없으면 category(분류)에 맞는 react-icons(GI) 아이콘이 쓰입니다.
- * 직접 추가 행은 별도 아이콘을 씁니다.
+ * 운영에서는 DB `ingredient_catalog.icon_image_file`에 onion.png 등을 두고, 파일명 변경 시 DB만 수정하면 됩니다.
+ *
+ * 로컬 폴백만 쓸 때:
+ * 1) public/ingredient-icons/ 에 PNG 등 배치
+ * 2) INGREDIENT_IMAGE_OVERRIDES 에 재료명 → URL
  */
 
 import React from "react";
@@ -27,10 +26,26 @@ import {
 } from "react-icons/md";
 import { FiAnchor, FiDroplet, FiPackage, FiPlusCircle } from "react-icons/fi";
 
-/** @type {Record<string, string>} 재료 이름(카탈로그와 동일) → public 기준 이미지 URL */
+const DEFAULT_ICON_DIR = "ingredient-icons";
+
+/**
+ * 백엔드 카탈로그의 iconImageFile(파일명 또는 하위경로/파일) → 브라우저용 절대 URL
+ * @param {string | null | undefined} iconImageFile 예: onion.png, subdir/onion.png
+ * @returns {string | null}
+ */
+export function resolvePublicIngredientIconUrl(iconImageFile) {
+  const f = String(iconImageFile ?? "").trim();
+  if (!f) return null;
+  const base = process.env.PUBLIC_URL || "";
+  if (f.includes("/")) {
+    return `${base}/${f.replace(/^\/+/, "")}`;
+  }
+  return `${base}/${DEFAULT_ICON_DIR}/${f}`;
+}
+
+/** @type {Record<string, string>} 재료 이름 → public URL (DB/오프라인 폴백용) */
 export const INGREDIENT_IMAGE_OVERRIDES = {
-  // 예시 (파일 넣은 뒤 주석 해제):
-  양파: `${process.env.PUBLIC_URL}/ingredient-icons/onion.png`,
+  // 양파: `${process.env.PUBLIC_URL}/ingredient-icons/onion.png`,
 };
 
 const CATEGORY_ICON = {
@@ -53,10 +68,31 @@ const CATEGORY_ICON = {
 const DefaultIcon = FiPackage;
 
 /**
- * @param {{ name: string; category?: string | null; custom?: boolean; className?: string; title?: string }} props
+ * @param {{ name: string; category?: string | null; custom?: boolean; className?: string; title?: string; userImageUrl?: string | null; iconImageFile?: string | null }} props
  */
-export function CatalogIngredientGlyph({ name, category, custom, className = "", title }) {
+export function CatalogIngredientGlyph({ name, category, custom, className = "", title, userImageUrl, iconImageFile }) {
   const trimmed = (name || "").trim();
+  if (userImageUrl && String(userImageUrl).trim()) {
+    return (
+      <img
+        src={userImageUrl}
+        alt=""
+        className={`ingredient-catalog-glyph-img ${className}`.trim()}
+        title={title || trimmed}
+      />
+    );
+  }
+  const catalogFileUrl = iconImageFile ? resolvePublicIngredientIconUrl(iconImageFile) : null;
+  if (catalogFileUrl) {
+    return (
+      <img
+        src={catalogFileUrl}
+        alt=""
+        className={`ingredient-catalog-glyph-img ${className}`.trim()}
+        title={title || trimmed}
+      />
+    );
+  }
   const img = trimmed && INGREDIENT_IMAGE_OVERRIDES[trimmed];
   if (img) {
     return (

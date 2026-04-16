@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../styles/SignUp.css";
 
 import { signup } from "../api/auth";
-import apiClient from "../api/apiClient";
+import { startOAuthLogin } from "../utils/oauthRedirect";
 import { useToast } from "../context/ToastContext";
 
 const SignUp = () => {
@@ -70,16 +70,8 @@ const SignUp = () => {
       .catch((error) => toast(error.message));
   };
 
-  const handleSocialSignup = async (provider) => {
-    try {
-      const { data } = await apiClient.get(`/oauth2/authorization/${provider}`);
-      toast(data.message || `${provider} 간편 로그인 준비 중입니다.`);
-    } catch (error) {
-      toast(
-        error.response?.data?.message ||
-        "간편 로그인 연동을 준비 중입니다. 잠시만 기다려 주세요.",
-      );
-    }
+  const handleSocialSignup = (provider) => {
+    startOAuthLogin(provider);
   };
 
   useEffect(() => {

@@ -8,4 +8,10 @@ module.exports = (app) => {
       changeOrigin: true,
     })
   );
+  const oauthTarget = {
+    target: "http://localhost:8080",
+    changeOrigin: true,
+  };
+  app.use("/oauth2", createProxyMiddleware(oauthTarget));
+  app.use("/login/oauth2", createProxyMiddleware(oauthTarget));
 };

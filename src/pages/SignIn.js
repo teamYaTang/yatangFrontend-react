@@ -7,6 +7,8 @@ import { signin } from "../api/auth";
 import { hasGuestData, getAllGuestData, clearAllGuestData } from "../utils/storage";
 import { importGuestDataApi } from "../api/refrigerator";
 import { useToast } from "../context/ToastContext";
+import { startOAuthLogin } from "../utils/oauthRedirect";
+import "../styles/SignUp.css";
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -151,6 +153,23 @@ const SignIn = () => {
 
         <div className="signin-divider">
           <span>또는</span>
+        </div>
+
+        <div className="signup-social-group" style={{ width: "100%", marginBottom: 8 }}>
+          <button
+            type="button"
+            className="signup-social-button kakao"
+            onClick={() => startOAuthLogin("kakao")}
+          >
+            카카오로 로그인
+          </button>
+          <button
+            type="button"
+            className="signup-social-button google"
+            onClick={() => startOAuthLogin("google")}
+          >
+            Google로 로그인
+          </button>
         </div>
 
         <p className="signin-signup-text">

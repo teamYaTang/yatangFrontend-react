@@ -9,6 +9,7 @@ import Ingredient from "../pages/Ingredient";
 import Loading from "../pages/Loading";
 import Complete from "../pages/Complete";
 import Settings from "../pages/Settings";
+import OAuthCallback from "../pages/OAuthCallback";
 
 export default function Router() {
   return (
@@ -16,6 +17,7 @@ export default function Router() {
         <Routes>
           <Route path="/" element={<Refrigerator />} />      {/* 진입점을 냉장고로 변경 */}
           <Route path="/signin" element={<SignIn />} />       {/* 로그인은 별도 경로로 */}
+          <Route path="/oauth/callback" element={<OAuthCallback />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/nickname" element={<NickName />} />
           <Route path="/refrigerator" element={<Refrigerator />} />

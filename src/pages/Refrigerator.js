@@ -23,6 +23,10 @@ import { getUserIdFromToken, isLoggedIn } from "../utils/jwt";
 import { useToast } from "../context/ToastContext";
 import { ITEM_SORT_OPTIONS, sortItems, normalizeSortKey } from "../utils/itemSort";
 import { formatDdayLabel, formatRegisteredAt, getDaysUntilExpiration, isDdayUrgent } from "../utils/ddayLabel";
+import { CatalogIngredientGlyph, INGREDIENT_IMAGE_OVERRIDES } from "../constants/ingredientCatalogVisuals";
+import { getIngredientImageMapApi } from "../api/ingredientImages";
+import { getIngredientCatalogIconMapApi } from "../api/ingredientCatalog";
+import { getGuestIngredientImageMapForCustomCatalogOnly } from "../utils/guestIngredientImages";
 
 const UNIT_OPTIONS = ["개", "팩", "병", "봉지", "캔", "g", "kg", "ml", "L"];
 const LS_FRIDGE_SORT = "yatang_fridge_sort";
@@ -52,6 +56,11 @@ const Refrigerator = () => {
   const [moveBusy, setMoveBusy] = useState(false);
   const [sortKey, setSortKey] = useState(() => normalizeSortKey(localStorage.getItem(LS_FRIDGE_SORT)));
 
+  /** 재료명(소문자) → 사용자 등록 이미지 URL */
+  const [ingredientImageMap, setIngredientImageMap] = useState({});
+  /** 재료명(소문자) → 시스템 카탈로그 아이콘 파일명(영문) */
+  const [systemIconFileByNameLower, setSystemIconFileByNameLower] = useState({});
+
   const fridgeSelectMeasureRef = useRef(null);
   const [fridgeSelectWidthPx, setFridgeSelectWidthPx] = useState(null);
 
@@ -68,11 +77,64 @@ const Refrigerator = () => {
     const textW = span.offsetWidth;
     const w = Math.max(FRIDGE_SELECT_MIN_WIDTH_PX, textW + FRIDGE_SELECT_ARROW_PAD_PX);
     setFridgeSelectWidthPx(w);
-  }, [mainFridge?.id, mainFridge?.name]);
+  }, [mainFridge]);
 
   useEffect(() => {
     localStorage.setItem(LS_FRIDGE_SORT, sortKey);
   }, [sortKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const m = await getIngredientCatalogIconMapApi();
+        if (!cancelled) setSystemIconFileByNameLower(m && typeof m === "object" ? m : {});
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const syncGuest = () => {
+      if (!isLoggedIn()) {
+        setIngredientImageMap(getGuestIngredientImageMapForCustomCatalogOnly());
+      }
+    };
+    syncGuest();
+    window.addEventListener("yatang-guest-images-changed", syncGuest);
+    return () => window.removeEventListener("yatang-guest-images-changed", syncGuest);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!isLoggedIn()) {
+        setIngredientImageMap(getGuestIngredientImageMapForCustomCatalogOnly());
+        return;
+      }
+      const uid = getUserIdFromToken();
+      if (!uid) return;
+      try {
+        const m = await getIngredientImageMapApi(uid);
+        if (!cancelled) setIngredientImageMap(m || {});
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    load();
+    const onServer = () => {
+      if (isLoggedIn()) load();
+    };
+    window.addEventListener("yatang-ingredient-images-changed", onServer);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("yatang-ingredient-images-changed", onServer);
+    };
+  }, [loading, mainFridge?.id]);
 
   const sortedFridgeItems = useMemo(() => sortItems(fridgeItems, sortKey), [fridgeItems, sortKey]);
   const sortedFreezerItems = useMemo(() => sortItems(freezerItems, sortKey), [freezerItems, sortKey]);
@@ -315,14 +377,38 @@ const Refrigerator = () => {
       const d = getDaysUntilExpiration(item);
       const dlabel = item.expirationDate ? formatDdayLabel(d) : null;
       const urgent = item.expirationDate ? isDdayUrgent(d) : false;
+      const trimmedName = (item.name || "").trim();
+      const lower = trimmedName.toLowerCase();
+      const imgUrl = ingredientImageMap[lower];
+      const iconFile = systemIconFileByNameLower[lower];
+      const hasStaticCatalogImage = Boolean(
+        (trimmedName && INGREDIENT_IMAGE_OVERRIDES[trimmedName]) || iconFile,
+      );
+      const showCatalogGlyph = Boolean(imgUrl || hasStaticCatalogImage);
+      const isUserPhoto = Boolean(imgUrl);
+      const iconModifier =
+        showCatalogGlyph && (isUserPhoto ? " fridge-item-icon--photo" : " fridge-item-icon--catalog-icon");
       return (
         <div
           className="fridge-item-slot"
           key={`${type}-${item.id}`}
           onClick={() => openDetail(item, type)}
         >
-          <div className={`fridge-item-icon ${type}`}>
-            {type === "fridge" ? <FiPackage /> : type === "freezer" ? <FiLayers /> : <FiBox />}
+          <div className={`fridge-item-icon ${type}${iconModifier || ""}`}>
+            {showCatalogGlyph ? (
+              <CatalogIngredientGlyph
+                name={item.name}
+                userImageUrl={imgUrl || undefined}
+                iconImageFile={iconFile || undefined}
+                className="fridge-item-photo-glyph"
+              />
+            ) : type === "fridge" ? (
+              <FiPackage />
+            ) : type === "freezer" ? (
+              <FiLayers />
+            ) : (
+              <FiBox />
+            )}
           </div>
           <div className="fridge-item-text-col">
             <div className="fridge-item-name">{item.name}</div>

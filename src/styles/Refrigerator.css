@@ -1,5 +1,10 @@
 /* src/styles/Refrigerator.css */
 .fridge-page-wrapper {
+  /* 냉장고 그리드 재료 아이콘 크기 — 여기만 바꾸면 전체에 반영됩니다. */
+  --fridge-item-icon-size: 40px;
+  --fridge-item-icon-font-size: 20px;
+  --fridge-item-icon-radius: 14px;
+
   min-height: 100vh;
   background: #f6f8fb;
   padding: 32px 24px 64px;
@@ -388,13 +393,13 @@
 }
 
 .fridge-item-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 18px;
+  width: var(--fridge-item-icon-size);
+  height: var(--fridge-item-icon-size);
+  border-radius: var(--fridge-item-icon-radius);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: var(--fridge-item-icon-font-size);
   background: #ffffff;
   box-shadow: 0 8px 16px rgba(15, 23, 42, 0.1);
   color: #4c6ef5;
@@ -407,6 +412,35 @@
 
 .fridge-item-icon.pantry {
   color: #d97706;
+}
+
+.fridge-item-icon--photo {
+  padding: 0;
+  overflow: hidden;
+}
+
+.fridge-item-icon--photo .ingredient-catalog-glyph-img,
+.fridge-item-icon--photo .fridge-item-photo-glyph {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--fridge-item-icon-radius);
+  display: block;
+}
+
+/* 관리자 카탈로그 PNG만: 흰 카드 배경 없이 투명 배경 */
+.fridge-item-icon--catalog-icon {
+  background: transparent;
+  box-shadow: none;
+}
+
+.fridge-item-icon--catalog-icon .ingredient-catalog-glyph-img,
+.fridge-item-icon--catalog-icon .fridge-item-photo-glyph {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 0;
+  display: block;
 }
 
 .fridge-item-badge {

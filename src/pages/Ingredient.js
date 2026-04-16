@@ -21,9 +21,11 @@ import {
 } from "../api/refrigerator";
 import {
   getIngredientCatalogApi,
+  getIngredientCatalogIconMapApi,
   postCustomIngredientCatalogApi,
   deleteCustomIngredientCatalogApi,
 } from "../api/ingredientCatalog";
+import { getIngredientImageMapApi } from "../api/ingredientImages";
 import { getUserProfile } from "../api/auth";
 import { getUserIdFromToken, isLoggedIn } from "../utils/jwt";
 import { getGuestCatalogExtras, addGuestCatalogExtra, removeGuestCatalogExtra } from "../utils/storage";
@@ -32,6 +34,12 @@ import { ITEM_SORT_OPTIONS, sortItems, normalizeSortKey } from "../utils/itemSor
 import { formatRegisteredAt } from "../utils/ddayLabel";
 import { INGREDIENT_CATALOG_CATEGORIES } from "../constants/ingredientCatalogCategories";
 import { CatalogIngredientGlyph } from "../constants/ingredientCatalogVisuals";
+import { uploadIngredientImageApi } from "../api/ingredientImages";
+import {
+  getGuestIngredientImageMap,
+  getGuestIngredientImageMapForCustomCatalogOnly,
+  setGuestIngredientImage,
+} from "../utils/guestIngredientImages";
 
 const UNIT_PRESETS = ["개", "팩", "병", "봉지", "캔", "g", "kg", "ml", "L"];
 
@@ -103,6 +111,62 @@ const Ingredient = () => {
   const [editSaving, setEditSaving] = useState(false);
   const [moveProcessing, setMoveProcessing] = useState(false);
   const [bulkSelected, setBulkSelected] = useState(() => new Set());
+  const [, setGuestImageTick] = useState(0);
+
+  /** 재료명(소문자) → 시스템 카탈로그 아이콘 파일명 */
+  const [systemIconFileByNameLower, setSystemIconFileByNameLower] = useState({});
+  /** 재료명(소문자) → 사용자 업로드 이미지 URL */
+  const [userIngredientImageMap, setUserIngredientImageMap] = useState({});
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const m = await getIngredientCatalogIconMapApi();
+        if (!cancelled) setSystemIconFileByNameLower(m && typeof m === "object" ? m : {});
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const syncGuest = () => {
+      if (!isLoggedIn()) {
+        setUserIngredientImageMap(getGuestIngredientImageMapForCustomCatalogOnly());
+      }
+    };
+    syncGuest();
+    window.addEventListener("yatang-guest-images-changed", syncGuest);
+    return () => window.removeEventListener("yatang-guest-images-changed", syncGuest);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!isLoggedIn()) {
+        setUserIngredientImageMap(getGuestIngredientImageMapForCustomCatalogOnly());
+        return;
+      }
+      const uid = getUserIdFromToken();
+      if (!uid) return;
+      try {
+        const m = await getIngredientImageMapApi(uid);
+        if (!cancelled) setUserIngredientImageMap(m || {});
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    load();
+    window.addEventListener("yatang-ingredient-images-changed", load);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("yatang-ingredient-images-changed", load);
+    };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(LS_ING_TAB, activeTab);
@@ -596,6 +660,26 @@ const Ingredient = () => {
       if (fridgeId != null) await loadItems(fridgeId);
       if (activeTab === "pantry" || override?.storageType === "pantry") await loadPantry();
       await loadAllItems();
+      setBulkSelected((prev) => {
+        const next = new Set(prev);
+        if (override) {
+          if (activeTab === "all") {
+            const storageLabel =
+              override.storageType === "fridge"
+                ? "냉장실"
+                : override.storageType === "freezer"
+                  ? "냉동실"
+                  : "상온보관";
+            const fid = override.fridgeId != null ? String(override.fridgeId) : "x";
+            next.delete(`all-${fid}-${storageLabel}-${override.itemId}`);
+          } else {
+            next.delete(String(override.itemId));
+          }
+        } else if (itemId != null) {
+          next.delete(String(itemId));
+        }
+        return next;
+      });
       toast("삭제했습니다.");
     } catch (error) {
       console.error("재료 삭제 에러:", error);
@@ -748,6 +832,36 @@ const Ingredient = () => {
       else next.add(sk);
       return next;
     });
+  };
+
+  const handleCatalogImageUpload = async (row, file) => {
+    if (!file || !row?.name) return;
+    if (!row.custom) {
+      toast("직접 추가한 재료에만 사진을 등록할 수 있습니다.");
+      return;
+    }
+    const name = row.name.trim();
+    try {
+      if (isLoggedIn()) {
+        const uid = getUserIdFromToken();
+        if (!uid) throw new Error("로그인이 필요합니다.");
+        await uploadIngredientImageApi(uid, name, file);
+        await refreshCatalog();
+        window.dispatchEvent(new Event("yatang-ingredient-images-changed"));
+        toast("재료 사진을 등록했습니다.");
+      } else {
+        const reader = new FileReader();
+        reader.onload = () => {
+          setGuestIngredientImage(name, reader.result);
+          setGuestImageTick((t) => t + 1);
+          window.dispatchEvent(new Event("yatang-guest-images-changed"));
+          toast("이 기기에 재료 사진을 저장했습니다.");
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch (e) {
+      toast(e.message || "업로드에 실패했습니다.");
+    }
   };
 
   const handleAddCustomCatalogName = async () => {
@@ -903,6 +1017,23 @@ const Ingredient = () => {
         : activeTab === "pantry"
           ? sortedPantryItems
           : sortedAllItems;
+
+  const renderIngredientListGlyph = (name) => {
+    const trimmed = (name || "").trim();
+    const lower = trimmed.toLowerCase();
+    const imgUrl = userIngredientImageMap[lower];
+    const iconFile = systemIconFileByNameLower[lower];
+    return (
+      <div className="ingredient-item-glyph-wrap" aria-hidden>
+        <CatalogIngredientGlyph
+          name={name}
+          userImageUrl={imgUrl || undefined}
+          iconImageFile={iconFile || undefined}
+          className="ingredient-list-glyph"
+        />
+      </div>
+    );
+  };
 
   if (loading) {
     return <div className="ingredient-loading">재료 정보를 불러오는 중입니다...</div>;
@@ -1175,39 +1306,42 @@ const Ingredient = () => {
                   />
                   <button
                     type="button"
-                    className="ingredient-item-main"
+                    className="ingredient-item-main ingredient-item-main--with-glyph"
                     onClick={() => openEditFromAggregated(row)}
                   >
-                    <span className="ingredient-item-name">{row.name}</span>
-                    <span className="ingredient-item-meta">
-                      {row.quantity} {row.unit}
-                      {row.expirationDate && (
-                        <>
-                          {" "}
-                          · 소비기한 {row.expirationDate}
-                          {row.daysUntilExpiration != null &&
-                            ` (D${row.daysUntilExpiration >= 0 ? "-" : "+"}${Math.abs(row.daysUntilExpiration)})`}
-                        </>
-                      )}
-                    </span>
-                    <span className="ingredient-all-badges">
-                      <span className="ingredient-badge-fridge">{row.fridgeName}</span>
-                      <span
-                        className={
-                          row.storageType === "냉동실"
-                            ? "ingredient-badge-storage freezer"
-                            : row.storageType === "상온보관"
-                              ? "ingredient-badge-storage pantry"
-                              : "ingredient-badge-storage fridge"
-                        }
-                      >
-                        {row.storageType}
+                    {renderIngredientListGlyph(row.name)}
+                    <div className="ingredient-item-main-col">
+                      <span className="ingredient-item-name">{row.name}</span>
+                      <span className="ingredient-item-meta">
+                        {row.quantity} {row.unit}
+                        {row.expirationDate && (
+                          <>
+                            {" "}
+                            · 소비기한 {row.expirationDate}
+                            {row.daysUntilExpiration != null &&
+                              ` (D${row.daysUntilExpiration >= 0 ? "-" : "+"}${Math.abs(row.daysUntilExpiration)})`}
+                          </>
+                        )}
                       </span>
-                    </span>
-                    {row.memo && <span className="ingredient-item-memo">{row.memo}</span>}
-                    {row.createdAt && (
-                      <span className="ingredient-item-registered">등록 {formatRegisteredAt(row.createdAt)}</span>
-                    )}
+                      <span className="ingredient-all-badges">
+                        <span className="ingredient-badge-fridge">{row.fridgeName}</span>
+                        <span
+                          className={
+                            row.storageType === "냉동실"
+                              ? "ingredient-badge-storage freezer"
+                              : row.storageType === "상온보관"
+                                ? "ingredient-badge-storage pantry"
+                                : "ingredient-badge-storage fridge"
+                          }
+                        >
+                          {row.storageType}
+                        </span>
+                      </span>
+                      {row.memo && <span className="ingredient-item-memo">{row.memo}</span>}
+                      {row.createdAt && (
+                        <span className="ingredient-item-registered">등록 {formatRegisteredAt(row.createdAt)}</span>
+                      )}
+                    </div>
                   </button>
                   <button
                     type="button"
@@ -1236,7 +1370,7 @@ const Ingredient = () => {
                   />
                   <button
                     type="button"
-                    className="ingredient-item-main"
+                    className="ingredient-item-main ingredient-item-main--with-glyph"
                     onClick={() =>
                       openEditFromFridgeItem(
                         item,
@@ -1244,22 +1378,25 @@ const Ingredient = () => {
                       )
                     }
                   >
-                    <span className="ingredient-item-name">{item.name}</span>
-                    <span className="ingredient-item-meta">
-                      {item.quantity} {item.unit}
-                      {item.expirationDate && (
-                        <>
-                          {" "}
-                          · 소비기한 {item.expirationDate}
-                          {item.daysUntilExpiration != null &&
-                            ` (D${item.daysUntilExpiration >= 0 ? "-" : "+"}${Math.abs(item.daysUntilExpiration)})`}
-                        </>
+                    {renderIngredientListGlyph(item.name)}
+                    <div className="ingredient-item-main-col">
+                      <span className="ingredient-item-name">{item.name}</span>
+                      <span className="ingredient-item-meta">
+                        {item.quantity} {item.unit}
+                        {item.expirationDate && (
+                          <>
+                            {" "}
+                            · 소비기한 {item.expirationDate}
+                            {item.daysUntilExpiration != null &&
+                              ` (D${item.daysUntilExpiration >= 0 ? "-" : "+"}${Math.abs(item.daysUntilExpiration)})`}
+                          </>
+                        )}
+                      </span>
+                      {item.memo && <span className="ingredient-item-memo">{item.memo}</span>}
+                      {item.createdAt && (
+                        <span className="ingredient-item-registered">등록 {formatRegisteredAt(item.createdAt)}</span>
                       )}
-                    </span>
-                    {item.memo && <span className="ingredient-item-memo">{item.memo}</span>}
-                    {item.createdAt && (
-                      <span className="ingredient-item-registered">등록 {formatRegisteredAt(item.createdAt)}</span>
-                    )}
+                    </div>
                   </button>
                   <button
                     type="button"
@@ -1435,7 +1572,9 @@ const Ingredient = () => {
                   )}
                 </div>
               ) : (
-                visibleCatalogRows.map((row) => {
+                (() => {
+                  const guestIngredientImageMap = getGuestIngredientImageMap();
+                  return visibleCatalogRows.map((row) => {
                   const sk = catalogStableKey(row.name, row.defaultUnit || "개");
                   const catLabel = row.custom ? "직접 추가" : row.category || "기타";
                   const rowKey = row.id != null ? String(row.id) : sk;
@@ -1446,8 +1585,39 @@ const Ingredient = () => {
                           name={row.name}
                           category={row.category}
                           custom={row.custom}
+                          iconImageFile={row.custom ? undefined : row.iconImageFile}
+                          userImageUrl={
+                            row.custom
+                              ? row.userImageUrl ||
+                                guestIngredientImageMap[row.name.trim().toLowerCase()]
+                              : undefined
+                          }
                         />
                       </div>
+                      {row.custom && (
+                        <button
+                          type="button"
+                          className="ingredient-catalog-photo-chip"
+                          title="이 재료 사진 등록 (직접 추가한 재료만)"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            const input = e.currentTarget.querySelector("input[type=file]");
+                            input?.click();
+                          }}
+                        >
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            tabIndex={-1}
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              e.target.value = "";
+                              if (f) handleCatalogImageUpload(row, f);
+                            }}
+                          />
+                          사진
+                        </button>
+                      )}
                       <label className="ingredient-catalog-row-label">
                         <input
                           type="checkbox"
@@ -1474,7 +1644,8 @@ const Ingredient = () => {
                       )}
                     </div>
                   );
-                })
+                });
+                })()
               )}
             </div>
             <div className="ingredient-catalog-custom-block">
