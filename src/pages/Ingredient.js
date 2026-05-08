@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useLayoutEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../styles/Ingredient.css";
-import { FiPlus, FiTrash2, FiArrowLeft, FiX } from "react-icons/fi";
+import { FiPlus, FiTrash2, FiX } from "react-icons/fi";
 
 import {
   getUserFridgesApi,
@@ -1054,11 +1054,7 @@ const Ingredient = () => {
 
   return (
     <div className="ingredient-page-wrapper">
-      <div className="ingredient-header">
-        <button className="ingredient-back-button" onClick={() => navigate(-1)}>
-          <FiArrowLeft size={18} />
-          뒤로가기
-        </button>
+      <div className="ingredient-header ingredient-header--solo">
         <div className="ingredient-header-text">
           <h1 className="ingredient-title">{userNickname}의 재료 관리</h1>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "6px", flexWrap: "wrap" }}>

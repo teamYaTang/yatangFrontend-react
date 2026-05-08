@@ -5,24 +5,55 @@ const ToastContext = createContext(null);
 
 export function ToastProvider({ children }) {
   const [message, setMessage] = useState("");
+  const [action, setAction] = useState(null); // { label: string, onClick: () => void } | null
   const [visible, setVisible] = useState(false);
   const timerRef = useRef(null);
 
-  const toast = useCallback((msg, durationMs = 1000) => {
+  const hide = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    setMessage(msg);
-    setVisible(true);
-    timerRef.current = setTimeout(() => {
-      setVisible(false);
-      timerRef.current = null;
-    }, durationMs);
+    timerRef.current = null;
+    setVisible(false);
+    setAction(null);
   }, []);
+
+  /**
+   * @param {string} msg
+   * @param {number} durationMs
+   * @param {{label: string, onClick: () => void}=} actionOpt
+   */
+  const toast = useCallback(
+    (msg, durationMs = 1000, actionOpt) => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      setMessage(msg);
+      setAction(actionOpt && actionOpt.label && typeof actionOpt.onClick === "function" ? actionOpt : null);
+      setVisible(true);
+      timerRef.current = setTimeout(() => {
+        hide();
+      }, durationMs);
+    },
+    [hide],
+  );
 
   return (
     <ToastContext.Provider value={{ toast }}>
       {children}
       <div className={`app-toast ${visible ? "app-toast--visible" : ""}`} role="status" aria-live="polite">
-        {message}
+        <span className="app-toast__content">{message}</span>
+        {action ? (
+          <button
+            type="button"
+            className="app-toast__action"
+            onClick={() => {
+              try {
+                action.onClick();
+              } finally {
+                hide();
+              }
+            }}
+          >
+            {action.label}
+          </button>
+        ) : null}
       </div>
     </ToastContext.Provider>
   );

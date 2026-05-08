@@ -183,7 +183,7 @@ const Settings = () => {
     return (
         <div className="settings-page-wrapper">
             <header className="settings-header">
-                <button className="settings-back-button" onClick={() => navigate(-1)}>
+                <button className="settings-back-button" onClick={() => navigate(-1)} aria-label="뒤로가기">
                     <FiArrowLeft />
                 </button>
                 <h1 className="settings-title">설정</h1>

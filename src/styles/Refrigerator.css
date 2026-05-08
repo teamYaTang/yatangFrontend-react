@@ -7,14 +7,14 @@
 
   min-height: 100vh;
   background: #f6f8fb;
-  padding: 32px 24px 64px;
+  padding: 32px 24px 24px;
   display: flex;
   flex-direction: column;
   /*gap: 15px;*/
 }
 
 .fridge-page-with-dock {
-  padding-bottom: 120px;
+  padding-bottom: 24px;
 }
 
 .fridge-sort-toolbar {
@@ -100,17 +100,38 @@
 }
 
 .fridge-dock-inner {
-  max-width: 480px;
+  max-width: 520px;
   margin: 0 auto;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  align-items: stretch;
+  gap: 8px;
+  justify-content: center;
 }
 
-.fridge-dock-inner .fridge-primary-button,
-.fridge-dock-inner .fridge-secondary-button {
-  flex: 1;
-  min-width: 140px;
+.fridge-dock-inner .fridge-dock-text-btn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.fridge-dock-icon-btn {
+  flex: 0 0 auto;
+  width: 48px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 1.5px solid #c7d2fe;
+  background: #eef2ff;
+  color: #4338ca;
+  cursor: pointer;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.fridge-dock-icon-btn:active {
+  opacity: 0.88;
 }
 
 .fridge-modal-input-readonly {
@@ -649,6 +670,26 @@
 
 .fridge-secondary-button:hover {
   background: #f8fbff;
+}
+
+.fridge-add-fab {
+  position: fixed;
+  right: 16px;
+  /* bottom nav(고정)와 겹치지 않도록 충분히 위로 */
+  bottom: calc(110px + env(safe-area-inset-bottom, 0));
+  z-index: 60;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 16px;
+  background: linear-gradient(120deg, #4c6ef5, #5ed4f3);
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: 0 16px 26px rgba(76, 110, 245, 0.32);
+  cursor: pointer;
+}
+
+.fridge-add-fab:active {
+  opacity: 0.9;
 }
 
 /* Modal */

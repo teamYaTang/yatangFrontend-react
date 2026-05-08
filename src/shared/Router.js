@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 
 import SignIn from "../pages/SignIn";
 import SignUp from "../pages/SignUp";
@@ -7,25 +7,35 @@ import NickName from "../pages/NickName";
 import Refrigerator from "../pages/Refrigerator";
 import Ingredient from "../pages/Ingredient";
 import Loading from "../pages/Loading";
-import Complete from "../pages/Complete";
+import AiRecipePage from "../pages/AiRecipePage";
+import CartPage from "../pages/CartPage";
+import RecipeBookPage from "../pages/RecipeBookPage";
 import Settings from "../pages/Settings";
 import OAuthCallback from "../pages/OAuthCallback";
+import MainShell from "../layouts/MainShell";
 
 export default function Router() {
   return (
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Refrigerator />} />      {/* 진입점을 냉장고로 변경 */}
-          <Route path="/signin" element={<SignIn />} />       {/* 로그인은 별도 경로로 */}
-          <Route path="/oauth/callback" element={<OAuthCallback />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/nickname" element={<NickName />} />
+    <BrowserRouter>
+      <Routes>
+        <Route path="/signin" element={<SignIn />} />
+        <Route path="/oauth/callback" element={<OAuthCallback />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/nickname" element={<NickName />} />
+        <Route path="/loading" element={<Loading />} />
+
+        <Route element={<MainShell />}>
+          <Route path="/" element={<Navigate to="/refrigerator" replace />} />
           <Route path="/refrigerator" element={<Refrigerator />} />
           <Route path="/ingredient" element={<Ingredient />} />
-          <Route path="/loading" element={<Loading />} />
-          <Route path="/complete" element={<Complete />} />
+          <Route path="/ai-recipe" element={<AiRecipePage />} />
+          <Route path="/cart" element={<CartPage />} />
+          <Route path="/recipe-book" element={<RecipeBookPage />} />
           <Route path="/settings" element={<Settings />} />
-        </Routes>
-      </BrowserRouter>
+        </Route>
+
+        <Route path="/complete" element={<Navigate to="/ai-recipe" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }

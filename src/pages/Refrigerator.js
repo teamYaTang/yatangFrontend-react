@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiPackage, FiLayers, FiPlusCircle, FiRepeat, FiSettings, FiBox, FiX } from "react-icons/fi";
+import { createPortal } from "react-dom";
 import "../styles/Refrigerator.css";
 
 import {
@@ -180,10 +181,6 @@ const Refrigerator = () => {
     localStorage.setItem(LS_KEY, dayKey);
   }, [loading, fridgeItems, freezerItems, pantryItems, toast]);
 
-  const navigateToIngredient = () =>
-    navigate("/ingredient", { state: { selectedFridgeId: mainFridge?.id, fromRefrigerator: true } });
-  const navigateToRecipe = () => navigate("/complete");
-
   const refreshItems = async (targetFridgeId) => {
     const [fridgeData, freezerData] = await Promise.all([
       getFridgeItemsApi(targetFridgeId),
@@ -249,6 +246,10 @@ const Refrigerator = () => {
       return;
     }
     await handleFridgeChange(e);
+  };
+
+  const goIngredientAdd = () => {
+    navigate("/ingredient", { state: { selectedFridgeId: mainFridge?.id ?? null, fromRefrigerator: true } });
   };
 
   const totalItems = useMemo(
@@ -468,7 +469,7 @@ const Refrigerator = () => {
     detailType === "fridge" ? "냉장실 재료 상세" : detailType === "freezer" ? "냉동실 재료 상세" : "상온보관 재료 상세";
 
   return (
-    <div className="fridge-page-wrapper fridge-page-with-dock">
+    <div className="fridge-page-wrapper">
       <header className="fridge-header">
         <div className="fridge-header-top-row">
           <div className="fridge-header-content">
@@ -667,20 +668,19 @@ const Refrigerator = () => {
         </div>
       </div>
 
-      <div className="fridge-dock-fixed" role="navigation" aria-label="빠른 작업">
-        <div className="fridge-dock-inner">
-          <button className="fridge-primary-button" type="button" onClick={navigateToIngredient}>
-            재료 추가 / 수정
-          </button>
-          <button className="fridge-secondary-button" type="button" onClick={navigateToRecipe}>
-            AI 레시피 · 장바구니
-          </button>
-        </div>
-      </div>
+      {typeof document !== "undefined"
+        ? createPortal(
+            <button type="button" className="fridge-add-fab" onClick={goIngredientAdd}>
+              재료추가
+            </button>,
+            document.body,
+          )
+        : null}
 
-      {detailItem && editValues && (
-        <div className="fridge-modal-backdrop" onClick={closeDetail}>
-          <div className="fridge-modal" onClick={(e) => e.stopPropagation()}>
+      {detailItem && editValues && typeof document !== "undefined"
+        ? createPortal(
+            <div className="fridge-modal-backdrop" onClick={closeDetail}>
+              <div className="fridge-modal" onClick={(e) => e.stopPropagation()}>
             <div className="fridge-modal-header">
               <h2 className="fridge-modal-title">{modalTitle}</h2>
               <button type="button" className="fridge-modal-close-x" onClick={closeDetail} aria-label="닫기">
@@ -828,9 +828,11 @@ const Refrigerator = () => {
                 수정 사항 저장
               </button>
             </div>
-          </div>
-        </div>
-      )}
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 };

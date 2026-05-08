@@ -1,0 +1,137 @@
+.app-bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  padding: 8px 10px calc(10px + env(safe-area-inset-bottom, 0));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.97) 28%, #fff 100%);
+  border-top: 1px solid #e2e8f0;
+  box-shadow: 0 -10px 32px rgba(15, 23, 42, 0.08);
+}
+
+.app-bottom-nav__inner {
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.app-bottom-nav__item {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  padding: 6px 4px 8px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  border-radius: 14px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.1;
+  transition:
+    color 0.2s,
+    transform 0.2s;
+}
+
+.app-bottom-nav__item svg {
+  flex-shrink: 0;
+}
+
+.app-bottom-nav__item:hover {
+  color: #64748b;
+}
+
+.app-bottom-nav__item--active {
+  color: #4c6ef5;
+}
+
+.app-bottom-nav__item--active .app-bottom-nav__icon-wrap {
+  background: #eef2ff;
+}
+
+.app-bottom-nav__icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 0.2s,
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.2s;
+}
+
+/* 가운데 냉장고(홈) — 기본 탭, 가장 눈에 띄게 */
+.app-bottom-nav__item--hub .app-bottom-nav__icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #6366f1 0%, #4f46e5 55%, #4338ca 100%);
+  color: #fff;
+  box-shadow:
+    0 10px 26px rgba(79, 70, 229, 0.45),
+    0 2px 8px rgba(15, 23, 42, 0.12);
+  margin-bottom: 2px;
+}
+
+.app-bottom-nav__item--hub {
+  color: #475569;
+  flex: 1.15;
+  padding-bottom: 4px;
+}
+
+.app-bottom-nav__item--hub .app-bottom-nav__label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #334155;
+}
+
+.app-bottom-nav__item--hub.app-bottom-nav__item--active .app-bottom-nav__label {
+  color: #4338ca;
+}
+
+.app-bottom-nav__item--hub.app-bottom-nav__item--active .app-bottom-nav__icon-wrap {
+  background: linear-gradient(145deg, #4f46e5 0%, #3730a3 100%);
+  box-shadow:
+    0 12px 32px rgba(67, 56, 202, 0.55),
+    0 0 0 3px rgba(99, 102, 241, 0.35);
+  transform: scale(1.04);
+}
+
+.app-bottom-nav__label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 2px;
+}
+
+.app-bottom-nav__badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #f97316;
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.app-bottom-nav__icon-wrap {
+  position: relative;
+}

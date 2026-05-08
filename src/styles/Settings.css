@@ -1,7 +1,7 @@
 /* src/styles/Settings.css */
 .settings-page-wrapper {
   min-height: 100vh;
-  padding: 32px 24px 80px;
+  padding: 32px 24px 24px;
   background: #f8fafc;
   display: flex;
   flex-direction: column;
@@ -13,6 +13,11 @@
   align-items: center;
   gap: 16px;
   margin-bottom: 8px;
+}
+
+.settings-header--solo {
+  justify-content: center;
+  text-align: center;
 }
 
 .settings-back-button {

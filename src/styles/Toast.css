@@ -10,15 +10,42 @@
   color: #f8fafc;
   font-size: 0.95rem;
   font-weight: 500;
-  text-align: center;
+  text-align: left;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.25);
   z-index: 10000;
+  /* 토스트가 하단 네비 클릭을 가리지 않도록(액션 버튼만 클릭 가능) */
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.25s ease, transform 0.25s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .app-toast--visible {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+.app-toast__content {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.app-toast__action {
+  border: 1px solid rgba(226, 232, 240, 0.35);
+  background: rgba(248, 250, 252, 0.12);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 8px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  flex: 0 0 auto;
+  pointer-events: auto;
+}
+
+.app-toast__action:active {
+  opacity: 0.88;
 }

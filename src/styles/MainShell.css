@@ -1,0 +1,41 @@
+.main-shell {
+  min-height: 100vh;
+  position: relative;
+}
+
+.main-shell-outlet {
+  min-height: 100vh;
+  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0));
+  box-sizing: border-box;
+}
+
+/* 인스타 스토리 넘기듯: 다음/이전 탭으로 이동 시 살짝 슬라이드 */
+.main-shell-outlet--right {
+  animation: mainShellSlideFromRight 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.main-shell-outlet--left {
+  animation: mainShellSlideFromLeft 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes mainShellSlideFromRight {
+  from {
+    transform: translateX(14%);
+    opacity: 0.72;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes mainShellSlideFromLeft {
+  from {
+    transform: translateX(-14%);
+    opacity: 0.72;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

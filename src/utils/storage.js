@@ -246,6 +246,7 @@ export const addGuestShoppingBatch = (lines) => {
       ingredientName: line.ingredientName.trim(),
       quantityNote: line.quantityNote?.trim() || "",
       unit: line.unit?.trim() || "",
+      sourceRecipeTitle: line.sourceRecipeTitle?.trim() || "",
       checked: false,
       createdAt: new Date().toISOString(),
     });
