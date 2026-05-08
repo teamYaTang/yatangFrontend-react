@@ -11,7 +11,7 @@ import {
 } from "react-icons/fi";
 import "../styles/Complete.css";
 import { getAllItemsAcrossFridgesApi } from "../api/refrigerator";
-import { getIngredientCatalogApi } from "../api/ingredientCatalog";
+import { getIngredientCatalogApi, getIngredientCatalogIconMapApi } from "../api/ingredientCatalog";
 import {
   postRecipeSuggestApi,
   getShoppingListApi,
@@ -29,6 +29,10 @@ import { getGuestCatalogExtras } from "../utils/storage";
 import { coupangPurchaseUrl } from "../utils/coupangLink";
 import { pushRecentAiRecipes, getRecentAiRecipes } from "../utils/recentAiRecipes";
 import { useToast } from "../context/ToastContext";
+import { CatalogIngredientGlyph } from "../constants/ingredientCatalogVisuals";
+import { getIngredientImageMapApi } from "../api/ingredientImages";
+import { getGuestIngredientImageMapForCustomCatalogOnly } from "../utils/guestIngredientImages";
+import { playRecipeDoneSfx } from "../utils/sfx";
 
 const rowKey = (row) => `${row.storageType || ""}-${row.fridgeId ?? "p"}-${row.itemId ?? row.id}`;
 
@@ -47,6 +51,8 @@ const Complete = () => {
 
   const [selectedKeys, setSelectedKeys] = useState(() => new Set());
   const [recentRecipes, setRecentRecipes] = useState(() => getRecentAiRecipes());
+  const [recentOpen, setRecentOpen] = useState(false);
+  const [openRecentIdx, setOpenRecentIdx] = useState(null);
 
   const [manualName, setManualName] = useState("");
   const [catalogSuggestions, setCatalogSuggestions] = useState([]);
@@ -54,6 +60,61 @@ const Complete = () => {
   const suppressNextCatalogFetchRef = useRef(false);
 
   const userId = getUserIdFromToken();
+
+  /** 재료명(소문자) → 시스템 카탈로그 아이콘 파일명 */
+  const [systemIconFileByNameLower, setSystemIconFileByNameLower] = useState({});
+  /** 재료명(소문자) → 사용자 업로드 이미지 URL (직접 추가만) */
+  const [userIngredientImageMap, setUserIngredientImageMap] = useState({});
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const m = await getIngredientCatalogIconMapApi();
+        if (!cancelled) setSystemIconFileByNameLower(m && typeof m === "object" ? m : {});
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const syncGuest = () => {
+      if (!isLoggedIn()) {
+        setUserIngredientImageMap(getGuestIngredientImageMapForCustomCatalogOnly());
+      }
+    };
+    syncGuest();
+    window.addEventListener("yatang-guest-images-changed", syncGuest);
+    return () => window.removeEventListener("yatang-guest-images-changed", syncGuest);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!isLoggedIn()) {
+        setUserIngredientImageMap(getGuestIngredientImageMapForCustomCatalogOnly());
+        return;
+      }
+      const uid = getUserIdFromToken();
+      if (!uid) return;
+      try {
+        const m = await getIngredientImageMapApi(uid);
+        if (!cancelled) setUserIngredientImageMap(m || {});
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    load();
+    window.addEventListener("yatang-ingredient-images-changed", load);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("yatang-ingredient-images-changed", load);
+    };
+  }, []);
 
   const loadInventory = useCallback(async () => {
     try {
@@ -215,6 +276,7 @@ const Complete = () => {
       if (res?.recipes?.length) {
         pushRecentAiRecipes(res.recipes);
         setRecentRecipes(getRecentAiRecipes());
+        playRecipeDoneSfx();
       }
       if (!res?.recipes?.length) {
         toast("레시피를 가져오지 못했습니다. 잠시 후 다시 시도해주세요.");
@@ -226,6 +288,23 @@ const Complete = () => {
     } finally {
       setLoadingSuggest(false);
     }
+  };
+
+  const renderIngredientGlyph = (name) => {
+    const trimmed = (name || "").trim();
+    const lower = trimmed.toLowerCase();
+    const imgUrl = userIngredientImageMap[lower];
+    const iconFile = systemIconFileByNameLower[lower];
+    return (
+      <span className="complete-ingredient-glyph" aria-hidden>
+        <CatalogIngredientGlyph name={name} userImageUrl={imgUrl || undefined} iconImageFile={iconFile || undefined} />
+      </span>
+    );
+  };
+
+  const openRecentRecipe = (idx) => {
+    setRecentOpen(true);
+    setOpenRecentIdx((prev) => (prev === idx ? null : idx));
   };
 
   const addMissingToCart = async (recipe) => {
@@ -315,6 +394,15 @@ const Complete = () => {
     return `${n}/${inventory.length}종 선택 · ${names}${sel.length > 8 ? " …" : ""}`;
   }, [inventory, selectedKeys]);
 
+  const longPressRef = useRef({ t: null, fired: false });
+  const showInvMetaToast = (row) => {
+    const name = (row?.name || "").trim() || "재료";
+    const qty = row?.quantity != null ? `${row.quantity}${row.unit ? row.unit : ""}` : "";
+    const where = [row?.storageType, row?.fridgeName].filter(Boolean).join(" · ");
+    const msg = [name, qty, where].filter(Boolean).join(" / ");
+    toast(msg || name);
+  };
+
   return (
     <div className="complete-page">
       <div className="complete-header">
@@ -356,9 +444,23 @@ const Complete = () => {
 
       {tab === "suggest" && (
         <>
+          {loadingSuggest && (
+            <div className="complete-loading-overlay" role="status" aria-live="polite">
+              <div className="complete-loading-card">
+                <div className="complete-loading-buddy" aria-hidden>
+                  <div className="complete-loading-bounce" />
+                  <div className="complete-loading-sparkle s1" />
+                  <div className="complete-loading-sparkle s2" />
+                  <div className="complete-loading-sparkle s3" />
+                </div>
+                <div className="complete-loading-title">레시피를 만드는 중이에요…</div>
+                <div className="complete-loading-sub">잠깐만 기다려주세요</div>
+              </div>
+            </div>
+          )}
           <div className="complete-inventory-preview">
             <div className="complete-inventory-head">
-              <strong>AI에 넘길 재료</strong>
+              <strong>요리에 쓸 재료</strong>
               <span className="complete-inventory-summary">{invSummary}</span>
             </div>
             {inventory.length > 0 && (
@@ -372,32 +474,47 @@ const Complete = () => {
               </div>
             )}
             {inventory.length > 0 ? (
-              <div className="complete-inv-list">
+              <div className="complete-inv-grid" role="list">
                 {inventory.map((row) => {
                   const k = rowKey(row);
                   return (
-                    <label key={k} className="complete-inv-row">
-                      <input
-                        type="checkbox"
-                        checked={selectedKeys.has(k)}
-                        onChange={() => toggleInvKey(k)}
-                      />
-                      <span className="complete-inv-row-text">
-                        <strong>{row.name}</strong>
-                        {row.quantity != null && (
-                          <span>
-                            {" "}
-                            · {row.quantity}
-                            {row.unit ? row.unit : ""}
-                          </span>
-                        )}
-                        <span className="complete-inv-meta">
-                          {" "}
-                          · {row.storageType}
-                          {row.fridgeName ? ` · ${row.fridgeName}` : ""}
+                    <div key={k} className="complete-inv-tile" role="listitem">
+                      <button
+                        type="button"
+                        className={`complete-inv-tile-btn ${selectedKeys.has(k) ? "selected" : ""}`}
+                        onClick={() => toggleInvKey(k)}
+                        onPointerDown={() => {
+                          if (longPressRef.current.t) clearTimeout(longPressRef.current.t);
+                          longPressRef.current.fired = false;
+                          longPressRef.current.t = setTimeout(() => {
+                            longPressRef.current.fired = true;
+                            showInvMetaToast(row);
+                          }, 520);
+                        }}
+                        onPointerUp={() => {
+                          if (longPressRef.current.t) clearTimeout(longPressRef.current.t);
+                        }}
+                        onPointerCancel={() => {
+                          if (longPressRef.current.t) clearTimeout(longPressRef.current.t);
+                        }}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          showInvMetaToast(row);
+                        }}
+                        title={`${row?.name || ""}${row?.quantity != null ? ` · ${row.quantity}${row.unit || ""}` : ""}${
+                          row?.storageType ? ` · ${row.storageType}` : ""
+                        }${row?.fridgeName ? ` · ${row.fridgeName}` : ""}`}
+                      >
+                        <span className="complete-inv-glyph" aria-hidden>
+                          <CatalogIngredientGlyph
+                            name={row.name}
+                            userImageUrl={userIngredientImageMap[(row.name || "").trim().toLowerCase()] || undefined}
+                            iconImageFile={systemIconFileByNameLower[(row.name || "").trim().toLowerCase()] || undefined}
+                          />
                         </span>
-                      </span>
-                    </label>
+                        <span className="complete-inv-name">{row.name}</span>
+                      </button>
+                    </div>
                   );
                 })}
               </div>
@@ -445,19 +562,67 @@ const Complete = () => {
 
           {recentRecipes.length > 0 && (
             <div className="complete-recent-block">
-              <div className="complete-section-label">최근 추천 레시피 (최대 15개)</div>
-              <ul className="complete-recent-list">
-                {recentRecipes.map((r, idx) => (
-                  <li key={`${r.title}-${r.suggestedAt}-${idx}`}>
-                    <span className="complete-recent-title">{r.title || "제목 없음"}</span>
-                    {r.suggestedAt && (
-                      <span className="complete-recent-when">
-                        {new Date(r.suggestedAt).toLocaleString("ko-KR")}
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
+              <button
+                type="button"
+                className="complete-recent-toggle"
+                onClick={() => setRecentOpen((v) => !v)}
+              >
+                <span className="complete-section-label">최근 추천 레시피 (최대 15개)</span>
+                <span className="complete-recent-toggle-chev">{recentOpen ? "▲" : "▼"}</span>
+              </button>
+              {recentOpen && (
+                <>
+                  <ul className="complete-recent-list">
+                    {recentRecipes.map((r, idx) => (
+                      <li key={`${r.title}-${r.suggestedAt}-${idx}`}>
+                        <button type="button" className="complete-recent-title" onClick={() => openRecentRecipe(idx)}>
+                          {r.title || "제목 없음"}
+                        </button>
+                        {r.suggestedAt && (
+                          <span className="complete-recent-when">
+                            {new Date(r.suggestedAt).toLocaleString("ko-KR")}
+                          </span>
+                        )}
+                        {openRecentIdx === idx && recentRecipes[idx] && (
+                          <div className="complete-recent-detail">
+                            <div className="complete-recipe-title" style={{ marginBottom: 8 }}>
+                              {recentRecipes[idx].title || "제목 없음"}
+                            </div>
+                            <div className="complete-section-label">재료</div>
+                            <ul className="complete-ingredient-list">
+                              {(recentRecipes[idx].ingredients || []).map((ing, i) => (
+                                <li key={i} className="complete-ingredient-line">
+                                  <span className="complete-ingredient-main">
+                                    {renderIngredientGlyph(ing.name)}
+                                    <strong>{ing.name}</strong> {ing.amount}
+                                    {ing.note ? ` · ${ing.note}` : ""}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                            <div className="complete-section-label">순서</div>
+                            <ol>
+                              {(recentRecipes[idx].steps || []).map((s, i) => (
+                                <li key={i}>{s}</li>
+                              ))}
+                            </ol>
+                            <div className="complete-recipe-actions">
+                              <button
+                                type="button"
+                                className="complete-ghost-btn"
+                                onClick={() => saveBook(recentRecipes[idx])}
+                              >
+                                <FiBookOpen size={14} style={{ marginRight: 6, verticalAlign: "-2px" }} />
+                                레시피북에 저장
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </div>
           )}
 
@@ -507,6 +672,7 @@ const Complete = () => {
                   {(r.ingredients || []).map((ing, i) => (
                     <li key={i} className="complete-ingredient-line">
                       <span className="complete-ingredient-main">
+                        {renderIngredientGlyph(ing.name)}
                         <strong>{ing.name}</strong> {ing.amount}
                         {ing.note ? ` · ${ing.note}` : ""}
                       </span>
@@ -548,7 +714,13 @@ const Complete = () => {
                 )}
 
                 <div className="complete-recipe-actions">
-                  <button type="button" className="complete-secondary-btn" onClick={() => addMissingToCart(r)}>
+                  <button
+                    type="button"
+                    className="complete-secondary-btn"
+                    onClick={() => addMissingToCart(r)}
+                    disabled={!r?.missingIngredients?.length}
+                    title={!r?.missingIngredients?.length ? "부족한 재료가 없습니다." : undefined}
+                  >
                     <FiShoppingCart size={14} style={{ marginRight: 6, verticalAlign: "-2px" }} />
                     부족 재료 장바구니에 담기
                   </button>
@@ -691,6 +863,7 @@ const Complete = () => {
                         {(openBookRecipe.ingredients || []).map((ing, i) => (
                           <li key={i} className="complete-ingredient-line">
                             <span className="complete-ingredient-main">
+                              {renderIngredientGlyph(ing.name)}
                               {ing.name} {ing.amount}
                               {ing.note ? ` · ${ing.note}` : ""}
                             </span>

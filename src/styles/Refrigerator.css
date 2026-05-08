@@ -375,6 +375,10 @@
   overflow-y: auto;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  /* 남는 세로 공간이 있어도 위에서부터 차곡차곡 쌓이도록 */
+  align-content: start;
+  align-items: start;
+  grid-auto-rows: max-content;
   gap: 16px;
   padding: 8px;
 }

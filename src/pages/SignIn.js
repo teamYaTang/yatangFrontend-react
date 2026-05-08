@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/SignIn.css";
 
-import LogoImg from "../assets/LogoImg.png";
+// import LogoImg from "../assets/LogoImg.png";
+import LogoImg from "../assets/jibbabbuja_logo.png";
 import { signin } from "../api/auth";
 import { hasGuestData, getAllGuestData, clearAllGuestData } from "../utils/storage";
 import { importGuestDataApi } from "../api/refrigerator";

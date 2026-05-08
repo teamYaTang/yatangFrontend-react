@@ -112,6 +112,8 @@ const Ingredient = () => {
   const [moveProcessing, setMoveProcessing] = useState(false);
   const [bulkSelected, setBulkSelected] = useState(() => new Set());
   const [, setGuestImageTick] = useState(0);
+  /** 전체 탭: false면 선택된 냉장고의 냉장·냉동 + 상온만 */
+  const [showAllFridgesInAllTab, setShowAllFridgesInAllTab] = useState(false);
 
   /** 재료명(소문자) → 시스템 카탈로그 아이콘 파일명 */
   const [systemIconFileByNameLower, setSystemIconFileByNameLower] = useState({});
@@ -191,12 +193,10 @@ const Ingredient = () => {
   };
 
   const openCatalog = () => {
-    const s = localStorage.getItem(LS_CATALOG_STORAGE);
-    if (s === "fridge" || s === "freezer" || s === "pantry") {
-      setCatalogTargetStorage(s);
-    } else if (activeTab === "freezer") setCatalogTargetStorage("freezer");
-    else if (activeTab === "pantry") setCatalogTargetStorage("pantry");
-    else setCatalogTargetStorage("fridge");
+    setCatalogTargetStorage("fridge");
+    if (fridgeId != null) {
+      setCatalogTargetFridgeId(fridgeId);
+    }
     setCatalogOpen(true);
   };
 
@@ -269,6 +269,9 @@ const Ingredient = () => {
     }
     if (activeTab === "pantry") {
       loadPantry();
+    }
+    if (activeTab !== "all") {
+      setShowAllFridgesInAllTab(false);
     }
   }, [activeTab, loadAllItems, loadPantry]);
 
@@ -939,16 +942,10 @@ const Ingredient = () => {
     if (catalogTargetStorage === "pantry") {
       setCatalogAdding(true);
       try {
-        let compartment = await getPantryItemsApi();
         for (const key of keys) {
           const { name, unit } = parseCatalogStableKey(key);
           const payload = defaultPayload(name, unit);
-          const dup = compartment.some(
-            (it) => it.name?.trim() === payload.name && it.unit === payload.unit,
-          );
-          if (dup) continue;
           await createPantryItemApi(payload);
-          compartment = [...compartment, { name: payload.name, unit: payload.unit }];
         }
         setCatalogSelected(new Set());
         setCatalogOpen(false);
@@ -971,23 +968,14 @@ const Ingredient = () => {
     }
     setCatalogAdding(true);
     try {
-      const fridgeItemsNow = await getFridgeItemsApi(targetFid);
-      const freezerItemsNow = await getFreezerItemsApi(targetFid);
-      let compartment = catalogTargetStorage === "fridge" ? fridgeItemsNow : freezerItemsNow;
-
       for (const key of keys) {
         const { name, unit } = parseCatalogStableKey(key);
         const payload = defaultPayload(name, unit);
-        const dup = compartment.some(
-          (it) => it.name?.trim() === payload.name && it.unit === payload.unit,
-        );
-        if (dup) continue;
         if (catalogTargetStorage === "fridge") {
           await createFridgeItemApi(targetFid, payload);
         } else {
           await createFreezerItemApi(targetFid, payload);
         }
-        compartment = [...compartment, { name: payload.name, unit: payload.unit }];
       }
       setCatalogSelected(new Set());
       setCatalogOpen(false);
@@ -1009,6 +997,31 @@ const Ingredient = () => {
   const sortedPantryItems = useMemo(() => sortItems(pantryItems, sortKey), [pantryItems, sortKey]);
   const sortedAllItems = useMemo(() => sortItems(allItems, sortKey), [allItems, sortKey]);
 
+  const ownedIngredientNameLowerSet = useMemo(() => {
+    const s = new Set();
+    const add = (name) => {
+      const t = (name || "").trim().toLowerCase();
+      if (t) s.add(t);
+    };
+    (pantryItems || []).forEach((it) => add(it.name));
+    (fridgeItems || []).forEach((it) => add(it.name));
+    (freezerItems || []).forEach((it) => add(it.name));
+    (allItems || []).forEach((it) => add(it.name));
+    return s;
+  }, [pantryItems, fridgeItems, freezerItems, allItems]);
+
+  const filteredAllItemsForAllTab = useMemo(() => {
+    if (fridges.length <= 1 || showAllFridgesInAllTab) {
+      return sortedAllItems;
+    }
+    const fid = fridgeId != null ? String(fridgeId) : null;
+    return sortedAllItems.filter((row) => {
+      if (row.storageType === "상온보관") return true;
+      if (fid == null) return false;
+      return String(row.fridgeId ?? "") === fid;
+    });
+  }, [sortedAllItems, showAllFridgesInAllTab, fridges.length, fridgeId]);
+
   const currentItems =
     activeTab === "fridge"
       ? sortedFridgeItems
@@ -1016,7 +1029,7 @@ const Ingredient = () => {
         ? sortedFreezerItems
         : activeTab === "pantry"
           ? sortedPantryItems
-          : sortedAllItems;
+          : filteredAllItemsForAllTab;
 
   const renderIngredientListGlyph = (name) => {
     const trimmed = (name || "").trim();
@@ -1138,7 +1151,7 @@ const Ingredient = () => {
           <div className="ingredient-card-base ingredient-form-card ingredient-add-primary-card">
             <h2 className="ingredient-card-title">재료 추가</h2>
             <p className="ingredient-add-lead">
-              목록에서 재료를 고른 뒤 한 번에 담습니다. 수량·단위·소비기한은 추가한 다음 목록에서 항목을 눌러 수정하면 됩니다.
+              목록에서 재료를 고른 뒤 한 번에 담습니다. 수량·단위·소비기한은 재료를 추가한 뒤 목록에서 항목을 눌러 수정하면 됩니다.
             </p>
             <button
               type="button"
@@ -1148,7 +1161,7 @@ const Ingredient = () => {
               <FiPlus /> 재료 추가
             </button>
             <details className="ingredient-manual-details">
-              <summary className="ingredient-manual-summary">직접 입력으로 추가하기 (수량·소비기한을 처음부터 넣을 때)</summary>
+              <summary className="ingredient-manual-summary">직접 입력으로 추가하기 (수량·소비기한을 처음부터 등록)</summary>
               <form className="ingredient-manual-form-inner" onSubmit={handleAddItem}>
                 <div className="ingredient-input-group">
                   <label>재료명</label>
@@ -1240,9 +1253,20 @@ const Ingredient = () => {
           <div className="ingredient-card-base ingredient-form-card ingredient-all-hint">
             <h2 className="ingredient-card-title">전체 보기</h2>
             <p className="ingredient-all-hint-text">
-              모든 냉장고의 냉장·냉동·상온보관 재료를 한 목록으로 봅니다. 항목을 눌러 수량·소비기한을 수정할 수 있습니다.
+              기본으로는 위에서 고른 <strong>냉장고</strong>의 냉장·냉동 재료와, 사용자 공통인 <strong>상온보관</strong> 재료를
+              한 목록으로 봅니다. 항목을 눌러 수량·소비기한을 수정할 수 있습니다.
               새 재료는 <strong>냉장실·냉동실·상온보관</strong> 탭에서 <strong>재료 추가</strong>를 이용해주세요.
             </p>
+            {fridges.length > 1 && (
+              <label className="ingredient-all-fridges-toggle">
+                <input
+                  type="checkbox"
+                  checked={showAllFridgesInAllTab}
+                  onChange={(e) => setShowAllFridgesInAllTab(e.target.checked)}
+                />
+                모든 냉장고 보기
+              </label>
+            )}
           </div>
         )}
 
@@ -1468,7 +1492,8 @@ const Ingredient = () => {
               </button>
             </div>
             <p className="ingredient-catalog-hint">
-              보관 위치(냉장·냉동·상온)를 고른 뒤 목록에서 선택하세요. 상온보관은 냉장고와 무관한 한 곳에 모입니다.
+              보관 위치는 <strong>냉장실</strong>이 기본입니다. 냉장·냉동·상온을 고른 뒤 목록에서 선택하세요. 상온보관은
+              냉장고와 무관한 한 곳에 모입니다.
             </p>
             <div className="ingredient-catalog-category-row">
               {INGREDIENT_CATALOG_CATEGORIES.map((c) => (
@@ -1578,6 +1603,7 @@ const Ingredient = () => {
                   const sk = catalogStableKey(row.name, row.defaultUnit || "개");
                   const catLabel = row.custom ? "직접 추가" : row.category || "기타";
                   const rowKey = row.id != null ? String(row.id) : sk;
+                  const ownedHere = ownedIngredientNameLowerSet.has((row.name || "").trim().toLowerCase());
                   return (
                     <div key={rowKey} className="ingredient-catalog-row">
                       <div className="ingredient-catalog-glyph-wrap" aria-hidden>
@@ -1627,6 +1653,14 @@ const Ingredient = () => {
                         <span className="ingredient-catalog-cat">{catLabel}</span>
                         <span className="ingredient-catalog-name">{row.name}</span>
                         <span className="ingredient-catalog-unit">({row.defaultUnit || "개"})</span>
+                        {ownedHere && (
+                          <span
+                            className="ingredient-catalog-owned-badge"
+                            title="이미 재고에 있습니다. 그래도 추가할 수 있습니다."
+                          >
+                            보유 중
+                          </span>
+                        )}
                         {row.custom && <span className="ingredient-catalog-custom">내 목록</span>}
                       </label>
                       {row.custom && (

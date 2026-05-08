@@ -27,6 +27,7 @@ import { CatalogIngredientGlyph, INGREDIENT_IMAGE_OVERRIDES } from "../constants
 import { getIngredientImageMapApi } from "../api/ingredientImages";
 import { getIngredientCatalogIconMapApi } from "../api/ingredientCatalog";
 import { getGuestIngredientImageMapForCustomCatalogOnly } from "../utils/guestIngredientImages";
+import { playFlipSfx } from "../utils/sfx";
 
 const UNIT_OPTIONS = ["개", "팩", "병", "봉지", "캔", "g", "kg", "ml", "L"];
 const LS_FRIDGE_SORT = "yatang_fridge_sort";
@@ -139,6 +140,45 @@ const Refrigerator = () => {
   const sortedFridgeItems = useMemo(() => sortItems(fridgeItems, sortKey), [fridgeItems, sortKey]);
   const sortedFreezerItems = useMemo(() => sortItems(freezerItems, sortKey), [freezerItems, sortKey]);
   const sortedPantryItems = useMemo(() => sortItems(pantryItems, sortKey), [pantryItems, sortKey]);
+
+  // ───────── 유통기한 알림 (하루 1회) ─────────
+  useEffect(() => {
+    if (loading) return;
+    const all = [...(fridgeItems || []), ...(freezerItems || []), ...(pantryItems || [])];
+    if (all.length === 0) return;
+
+    const dayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const LS_KEY = "yatang_expiry_notify_day";
+    if (localStorage.getItem(LS_KEY) === dayKey) return;
+
+    const expiring = all
+      .map((it) => {
+        const d = getDaysUntilExpiration(it);
+        return { item: it, days: d };
+      })
+      .filter((x) => x.item?.expirationDate && x.days != null && x.days <= 1); // D-1부터 + 지난 것까지
+
+    if (expiring.length === 0) return;
+    expiring.sort((a, b) => (a.days ?? 999) - (b.days ?? 999));
+
+    const top = expiring.slice(0, 3).map((x) => x.item.name).filter(Boolean);
+    const msg =
+      top.length === 0
+        ? "유통기한 임박 재료가 있습니다."
+        : `유통기한 임박: ${top.join(", ")}${expiring.length > 3 ? ` 외 ${expiring.length - 3}개` : ""}`;
+
+    // 앱이 열려 있을 때: 토스트는 항상, 브라우저 알림은 권한 있을 때만(자동 요청 X)
+    toast(msg);
+    try {
+      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+        new Notification("야탱 유통기한 알림", { body: msg });
+      }
+    } catch {
+      // ignore
+    }
+
+    localStorage.setItem(LS_KEY, dayKey);
+  }, [loading, fridgeItems, freezerItems, pantryItems, toast]);
 
   const navigateToIngredient = () =>
     navigate("/ingredient", { state: { selectedFridgeId: mainFridge?.id, fromRefrigerator: true } });
@@ -527,7 +567,13 @@ const Refrigerator = () => {
               <div className="fridge-face-title">
                 <FiPackage size={24} color="#4c6ef5" /> 냉장실
               </div>
-              <button className="fridge-switch-button" onClick={() => setIsFlipped(true)}>
+              <button
+                className="fridge-switch-button"
+                onClick={() => {
+                  playFlipSfx();
+                  setIsFlipped(true);
+                }}
+              >
                 <FiRepeat /> 냉동실 보기
               </button>
             </div>
@@ -545,7 +591,13 @@ const Refrigerator = () => {
               <div className="fridge-face-title">
                 <FiLayers size={24} color="#06b6d4" /> 냉동실
               </div>
-              <button className="fridge-switch-button" onClick={() => setIsFlipped(false)}>
+              <button
+                className="fridge-switch-button"
+                onClick={() => {
+                  playFlipSfx();
+                  setIsFlipped(false);
+                }}
+              >
                 <FiRepeat /> 냉장실 보기
               </button>
             </div>
