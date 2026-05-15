@@ -24,6 +24,36 @@
   width: 100%;
 }
 
+.complete-header--ai-quota-row {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  margin-bottom: 16px;
+  width: 100%;
+  min-height: 1.75rem;
+}
+
+.complete-header--ai-quota-row .complete-title {
+  margin: 0;
+  text-align: center;
+}
+
+.complete-header--ai-quota-row .complete-ai-quota {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.complete-ai-quota {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .complete-back {
   border: none;
   background: #e0e7ff;
@@ -264,7 +294,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  z-index: 12000;
 }
 
 .complete-loading-card {

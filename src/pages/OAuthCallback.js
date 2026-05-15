@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { setAuthorization } from "../api/apiClient";
+import { setAuthTokens } from "../api/apiClient";
 import { hasGuestData, getAllGuestData, clearAllGuestData } from "../utils/storage";
 import { importGuestDataApi } from "../api/refrigerator";
 import { useToast } from "../context/ToastContext";
 import "../styles/SignIn.css";
 
 /**
- * 소셜 로그인 후 백엔드가 리다이렉트하는 페이지 (?token=JWT)
+ * 소셜 로그인 후 백엔드가 리다이렉트하는 페이지 (?accessToken=JWT&refreshToken=...)
  */
 const OAuthCallback = () => {
   const [searchParams] = useSearchParams();
@@ -17,20 +17,20 @@ const OAuthCallback = () => {
   const [guestLoading, setGuestLoading] = useState(false);
 
   useEffect(() => {
-    const token = searchParams.get("token");
+    const accessToken = searchParams.get("accessToken") || searchParams.get("token");
+    const refreshToken = searchParams.get("refreshToken");
     const err = searchParams.get("error");
     if (err) {
       toast("소셜 로그인에 실패했습니다.");
       navigate("/signin", { replace: true });
       return;
     }
-    if (!token) {
+    if (!accessToken) {
       toast("로그인 정보가 없습니다.");
       navigate("/signin", { replace: true });
       return;
     }
-    localStorage.setItem("accessToken", token);
-    setAuthorization(token);
+    setAuthTokens({ accessToken, refreshToken });
     if (hasGuestData()) {
       setMode("guest");
     } else {

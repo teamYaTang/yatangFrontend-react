@@ -20,6 +20,7 @@ import {
   deletePantryItemApi,
 } from "../api/refrigerator";
 import { getUserProfile } from "../api/auth";
+import { clearAuthTokens, ensureAccessToken } from "../api/apiClient";
 import { getUserIdFromToken, isLoggedIn } from "../utils/jwt";
 import { useToast } from "../context/ToastContext";
 import { ITEM_SORT_OPTIONS, sortItems, normalizeSortKey } from "../utils/itemSort";
@@ -38,6 +39,7 @@ const FRIDGE_SELECT_NAME_MAX_CHARS = 14;
 /** 텍스트 오른쪽: 커스텀 화살표(12px) + 최소 간격 — 브라우저 기본 화살표 여백보다 좁게 */
 const FRIDGE_SELECT_ARROW_PAD_PX = 14;
 const FRIDGE_SELECT_MIN_WIDTH_PX = 64;
+const asArray = (value) => (Array.isArray(value) ? value : []);
 
 const Refrigerator = () => {
   const navigate = useNavigate();
@@ -121,7 +123,7 @@ const Refrigerator = () => {
       const uid = getUserIdFromToken();
       if (!uid) return;
       try {
-        const m = await getIngredientImageMapApi(uid);
+        const m = await getIngredientImageMapApi();
         if (!cancelled) setIngredientImageMap(m || {});
       } catch (e) {
         console.error(e);
@@ -141,6 +143,10 @@ const Refrigerator = () => {
   const sortedFridgeItems = useMemo(() => sortItems(fridgeItems, sortKey), [fridgeItems, sortKey]);
   const sortedFreezerItems = useMemo(() => sortItems(freezerItems, sortKey), [freezerItems, sortKey]);
   const sortedPantryItems = useMemo(() => sortItems(pantryItems, sortKey), [pantryItems, sortKey]);
+  const sortedFridges = useMemo(
+    () => [...asArray(fridges)].sort((a, b) => Number(b.isMain === true) - Number(a.isMain === true)),
+    [fridges],
+  );
 
   // ───────── 유통기한 알림 (하루 1회) ─────────
   useEffect(() => {
@@ -186,29 +192,39 @@ const Refrigerator = () => {
       getFridgeItemsApi(targetFridgeId),
       getFreezerItemsApi(targetFridgeId),
     ]);
-    setFridgeItems(fridgeData ?? []);
-    setFreezerItems(freezerData ?? []);
+    setFridgeItems(asArray(fridgeData));
+    setFreezerItems(asArray(freezerData));
   };
 
   const refreshPantry = useCallback(async () => {
     const data = await getPantryItemsApi();
-    setPantryItems(data ?? []);
+    setPantryItems(asArray(data));
   }, []);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        if (isLoggedIn()) {
-          const userId = getUserIdFromToken();
-          if (userId) {
-            const profile = await getUserProfile(userId);
+        let loggedIn = isLoggedIn();
+        if (loggedIn) {
+          const ok = await ensureAccessToken();
+          if (!ok) loggedIn = false;
+        }
+
+        if (loggedIn) {
+          try {
+            const profile = await getUserProfile();
             setUserNickname(profile.nickname || profile.username || "");
+          } catch (e) {
+            const st = e.response?.status;
+            if (st === 401 || st === 403) throw e;
+            console.error(e);
+            setUserNickname("");
           }
         } else {
           setUserNickname("게스트");
         }
 
-        const fridgeList = await getUserFridgesApi();
+        const fridgeList = asArray(await getUserFridgesApi());
         setFridges(fridgeList);
 
         if (fridgeList.length > 0) {
@@ -219,6 +235,13 @@ const Refrigerator = () => {
         await refreshPantry();
       } catch (error) {
         console.error("데이터 로딩 에러:", error);
+        const status = error.response?.status;
+        if (status === 401 || status === 403) {
+          clearAuthTokens();
+          toast("로그인이 만료되었습니다. 다시 로그인해주세요.");
+          navigate("/signin", { replace: true });
+          return;
+        }
         toast("데이터를 불러오는데 실패했습니다.");
       } finally {
         setLoading(false);
@@ -485,9 +508,7 @@ const Refrigerator = () => {
                       fridgeSelectWidthPx != null ? { width: fridgeSelectWidthPx, maxWidth: "100%" } : undefined
                     }
                   >
-                    {fridges
-                      .sort((a, b) => Number(b.isMain === true) - Number(a.isMain === true))
-                      .map((f) => (
+                    {sortedFridges.map((f) => (
                         <option key={f.id} value={f.id}>
                           {f.name}
                         </option>

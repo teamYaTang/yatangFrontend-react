@@ -1,5 +1,5 @@
 import apiClient from "./apiClient";
-import { getUserIdFromToken, isLoggedIn } from "../utils/jwt";
+import { isLoggedIn } from "../utils/jwt";
 
 /** 시스템 카탈로그: 재료명(소문자) → 아이콘 파일명(영문). 인증 불필요. */
 export const getIngredientCatalogIconMapApi = async () => {
@@ -7,10 +7,9 @@ export const getIngredientCatalogIconMapApi = async () => {
   return data;
 };
 
-export const getIngredientCatalogApi = async (q, userId, category) => {
+export const getIngredientCatalogApi = async (q, category) => {
   const params = new URLSearchParams();
   if (q != null && String(q).trim() !== "") params.set("q", String(q).trim());
-  if (userId != null) params.set("userId", String(userId));
   if (category != null && String(category).trim() !== "" && category !== "전체") {
     params.set("category", String(category).trim());
   }
@@ -23,9 +22,7 @@ export const postCustomIngredientCatalogApi = async (name, defaultUnit = "개") 
   if (!isLoggedIn()) {
     throw new Error("로그인이 필요합니다.");
   }
-  const userId = getUserIdFromToken();
-  if (!userId) throw new Error("로그인이 필요합니다.");
-  const { data } = await apiClient.post(`/ingredients-catalog?userId=${userId}`, {
+  const { data } = await apiClient.post("/ingredients-catalog", {
     name,
     defaultUnit,
   });
@@ -36,7 +33,5 @@ export const deleteCustomIngredientCatalogApi = async (entryId) => {
   if (!isLoggedIn()) {
     throw new Error("로그인이 필요합니다.");
   }
-  const userId = getUserIdFromToken();
-  if (!userId) throw new Error("로그인이 필요합니다.");
-  await apiClient.delete(`/ingredients-catalog/${entryId}?userId=${userId}`);
+  await apiClient.delete(`/ingredients-catalog/${entryId}`);
 };

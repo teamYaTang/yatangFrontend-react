@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { FiClock, FiUsers, FiShoppingCart, FiBookOpen } from "react-icons/fi";
 import "../styles/Complete.css";
 import { getAllItemsAcrossFridgesApi } from "../api/refrigerator";
 import { getIngredientCatalogIconMapApi } from "../api/ingredientCatalog";
-import { postRecipeSuggestApi, addShoppingBatchApi, saveRecipeToBookApi } from "../api/recipe";
+import { postRecipeSuggestApi, addShoppingBatchApi, saveRecipeToBookApi, getRecipeSuggestQuotaApi } from "../api/recipe";
 import { getUserIdFromToken, isLoggedIn } from "../utils/jwt";
-import { pushRecentAiRecipes, getRecentAiRecipes } from "../utils/recentAiRecipes";
+import { pushRecentAiRecipes, getRecentAiRecipes, getRecentAiRecipeTitleHints } from "../utils/recentAiRecipes";
 import { useToast } from "../context/ToastContext";
 import { CatalogIngredientGlyph } from "../constants/ingredientCatalogVisuals";
 import { getIngredientImageMapApi } from "../api/ingredientImages";
@@ -33,8 +34,23 @@ const AiRecipePage = () => {
   const [recentOpen, setRecentOpen] = useState(false);
   const [openRecentIdx, setOpenRecentIdx] = useState(null);
 
+  const [suggestQuota, setSuggestQuota] = useState(null);
   const [systemIconFileByNameLower, setSystemIconFileByNameLower] = useState({});
   const [userIngredientImageMap, setUserIngredientImageMap] = useState({});
+
+  const refreshSuggestQuota = useCallback(async () => {
+    try {
+      const q = await getRecipeSuggestQuotaApi();
+      setSuggestQuota(q);
+    } catch (e) {
+      console.error(e);
+      setSuggestQuota(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshSuggestQuota();
+  }, [refreshSuggestQuota]);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,7 +88,7 @@ const AiRecipePage = () => {
       const uid = getUserIdFromToken();
       if (!uid) return;
       try {
-        const m = await getIngredientImageMapApi(uid);
+        const m = await getIngredientImageMapApi();
         if (!cancelled) setUserIngredientImageMap(m || {});
       } catch (e) {
         console.error(e);
@@ -122,11 +138,6 @@ const AiRecipePage = () => {
 
   const handleSuggest = async () => {
     setErr("");
-    if (!isLoggedIn()) {
-      toast("AI 레시피 추천은 로그인 후 이용할 수 있습니다.");
-      navigate("/signin");
-      return;
-    }
     if (!inventory.length) {
       toast("냉장고에 재료를 먼저 등록해주세요.");
       return;
@@ -143,8 +154,14 @@ const AiRecipePage = () => {
         quantity: i.quantity != null ? Number(i.quantity) : null,
         unit: (i.unit || "개").trim(),
       }));
-      const res = await postRecipeSuggestApi(ingredients);
+      const recentRecipeTitles = getRecentAiRecipeTitleHints();
+      const res = await postRecipeSuggestApi(ingredients, { recentRecipeTitles });
       setRecipes(res?.recipes || []);
+      if (res?.suggestQuota) {
+        setSuggestQuota(res.suggestQuota);
+      } else {
+        await refreshSuggestQuota();
+      }
       if (res?.recipes?.length) {
         pushRecentAiRecipes(res.recipes);
         setRecentRecipes(getRecentAiRecipes());
@@ -154,9 +171,17 @@ const AiRecipePage = () => {
         toast("레시피를 가져오지 못했습니다. 잠시 후 다시 시도해주세요.");
       }
     } catch (e) {
-      const msg = e.response?.data?.message || e.message || "요청에 실패했습니다.";
+      const status = e.response?.status;
+      const msg =
+        e.response?.data?.message ||
+        e.response?.data?.detail ||
+        e.message ||
+        "요청에 실패했습니다.";
       setErr(String(msg));
       toast(typeof msg === "string" ? msg : "레시피 추천에 실패했습니다.");
+      if (status === 429 || status === 400 || status === 503) {
+        await refreshSuggestQuota();
+      }
     } finally {
       setLoadingSuggest(false);
     }
@@ -232,30 +257,40 @@ const AiRecipePage = () => {
 
   return (
     <div className="complete-page">
-      <div className="complete-header complete-header--solo">
+      <div className="complete-header complete-header--ai-quota-row">
         <h1 className="complete-title">AI 레시피</h1>
+        {suggestQuota != null && (
+          <span className="complete-ai-quota" title="이 기기의 로컬 날짜 기준 오늘 남은 AI 추천 횟수">
+            오늘 {suggestQuota.remainingToday}/{suggestQuota.limitToday}회 남음
+          </span>
+        )}
       </div>
 
       <p className="complete-lead">
-        보유 재료를 최대한 활용하는 요리를 AI가 약 3가지 제안합니다. 부족한 재료는 장바구니에 모으고, 마음에 드는 결과는 레시피북에 저장할 수 있어요.
+        보유 재료를 최대한 활용하는 요리를 AI가 약 3가지 추천합니다. 부족한 재료는 장바구니에 담고, 마음에 드는 요리를 레시피북에 저장해보세요.
+      </p>
+      <p className="complete-hint">
+        이용자가 몰리면 AI 응답까지 1~2분 정도 걸릴 수 있어요. 잠시 기다리시거나, 천천히 다시 시도해 주세요.
       </p>
 
       {err && <div className="complete-error">{err}</div>}
 
-      {loadingSuggest && (
-        <div className="complete-loading-overlay" role="status" aria-live="polite">
-          <div className="complete-loading-card">
-            <div className="complete-loading-buddy" aria-hidden>
-              <div className="complete-loading-bounce" />
-              <div className="complete-loading-sparkle s1" />
-              <div className="complete-loading-sparkle s2" />
-              <div className="complete-loading-sparkle s3" />
+      {loadingSuggest &&
+        createPortal(
+          <div className="complete-loading-overlay" role="status" aria-live="polite">
+            <div className="complete-loading-card">
+              <div className="complete-loading-buddy" aria-hidden>
+                <div className="complete-loading-bounce" />
+                <div className="complete-loading-sparkle s1" />
+                <div className="complete-loading-sparkle s2" />
+                <div className="complete-loading-sparkle s3" />
+              </div>
+              <div className="complete-loading-title">레시피를 만드는 중이에요…</div>
+              <div className="complete-loading-sub">동시 이용이 많으면 1~2분 걸릴 수 있어요. 창을 닫지 말고 잠깐만 기다려 주세요.</div>
             </div>
-            <div className="complete-loading-title">레시피를 만드는 중이에요…</div>
-            <div className="complete-loading-sub">잠깐만 기다려주세요</div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
 
       <div className="complete-inventory-preview">
         <div className="complete-inventory-head">

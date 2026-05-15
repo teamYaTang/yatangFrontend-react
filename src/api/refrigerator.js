@@ -19,6 +19,8 @@ import {
   deleteLocalPantryItem,
 } from "../utils/storage";
 
+const asArray = (value) => (Array.isArray(value) ? value : []);
+
 const getUserId = () => {
   const userId = getUserIdFromToken();
   if (!userId) throw new Error("로그인이 필요합니다.");
@@ -32,29 +34,25 @@ export const getMainFridgeApi = async () => {
     const fridges = getLocalFridges();
     return fridges.find((f) => f.isMain) || fridges[0];
   }
-  const userId = getUserId();
-  const { data } = await apiClient.get(`/fridges/main?userId=${userId}`);
+  const { data } = await apiClient.get("/fridges/main");
   return data;
 };
 
 export const getUserFridgesApi = async () => {
-  if (!isLoggedIn()) return getLocalFridges();
-  const userId = getUserId();
-  const { data } = await apiClient.get(`/fridges?userId=${userId}`);
-  return data;
+  if (!isLoggedIn()) return asArray(getLocalFridges());
+  const { data } = await apiClient.get("/fridges");
+  return asArray(data);
 };
 
 export const createFridgeApi = async (name, isMain) => {
   if (!isLoggedIn()) return createLocalFridge(name, isMain);
-  const userId = getUserId();
-  const { data } = await apiClient.post(`/fridges?userId=${userId}`, { name, isMain });
+  const { data } = await apiClient.post("/fridges", { name, isMain });
   return data;
 };
 
 export const updateFridgeApi = async (fridgeId, updateData) => {
   if (!isLoggedIn()) return updateLocalFridge(fridgeId, updateData);
-  const userId = getUserId();
-  const { data } = await apiClient.patch(`/fridges/${fridgeId}?userId=${userId}`, updateData);
+  const { data } = await apiClient.patch(`/fridges/${fridgeId}`, updateData);
   return data;
 };
 
@@ -63,15 +61,13 @@ export const getFridgeByIdApi = async (fridgeId) => {
     const fridges = getLocalFridges();
     return fridges.find((f) => f.id === fridgeId);
   }
-  const userId = getUserId();
-  const { data } = await apiClient.get(`/fridges/${fridgeId}?userId=${userId}`);
+  const { data } = await apiClient.get(`/fridges/${fridgeId}`);
   return data;
 };
 
 export const deleteFridgeApi = async (fridgeId) => {
   if (!isLoggedIn()) return deleteLocalFridge(fridgeId);
-  const userId = getUserId();
-  const { data } = await apiClient.delete(`/fridges/${fridgeId}?userId=${userId}`);
+  const { data } = await apiClient.delete(`/fridges/${fridgeId}`);
   return data;
 };
 
@@ -85,54 +81,47 @@ export const importGuestDataApi = async (guestData) => {
 // ───────── 상온보관 (사용자당 하나의 목록) ─────────
 
 export const getPantryItemsApi = async () => {
-  if (!isLoggedIn()) return getLocalPantryItems();
-  const userId = getUserId();
-  const { data } = await apiClient.get(`/pantry/items?userId=${userId}`);
-  return data;
+  if (!isLoggedIn()) return asArray(getLocalPantryItems());
+  const { data } = await apiClient.get("/pantry/items");
+  return asArray(data);
 };
 
 export const createPantryItemApi = async (itemData) => {
   if (!isLoggedIn()) return createLocalPantryItem(itemData);
-  const userId = getUserId();
-  const { data } = await apiClient.post(`/pantry/items?userId=${userId}`, itemData);
+  const { data } = await apiClient.post("/pantry/items", itemData);
   return data;
 };
 
 export const updatePantryItemApi = async (itemId, itemData) => {
   if (!isLoggedIn()) return updateLocalPantryItem(itemId, itemData);
-  const userId = getUserId();
-  const { data } = await apiClient.patch(`/pantry/items/${itemId}?userId=${userId}`, itemData);
+  const { data } = await apiClient.patch(`/pantry/items/${itemId}`, itemData);
   return data;
 };
 
 export const deletePantryItemApi = async (itemId) => {
   if (!isLoggedIn()) return deleteLocalPantryItem(itemId);
-  const userId = getUserId();
-  const { data } = await apiClient.delete(`/pantry/items/${itemId}?userId=${userId}`);
+  const { data } = await apiClient.delete(`/pantry/items/${itemId}`);
   return data;
 };
 
 // ───────── 냉장실 아이템 ─────────
 
 export const getFridgeItemsApi = async (fridgeId) => {
-  if (!isLoggedIn()) return getLocalFridgeItems(fridgeId);
-  const userId = getUserId();
-  const { data } = await apiClient.get(`/fridges/${fridgeId}/items?userId=${userId}`);
-  return data;
+  if (!isLoggedIn()) return asArray(getLocalFridgeItems(fridgeId));
+  const { data } = await apiClient.get(`/fridges/${fridgeId}/items`);
+  return asArray(data);
 };
 
 export const createFridgeItemApi = async (fridgeId, itemData) => {
   if (!isLoggedIn()) return createLocalFridgeItem(fridgeId, itemData);
-  const userId = getUserId();
-  const { data } = await apiClient.post(`/fridges/${fridgeId}/items?userId=${userId}`, itemData);
+  const { data } = await apiClient.post(`/fridges/${fridgeId}/items`, itemData);
   return data;
 };
 
 export const updateFridgeItemApi = async (fridgeId, itemId, itemData) => {
   if (!isLoggedIn()) return updateLocalFridgeItem(fridgeId, itemId, itemData);
-  const userId = getUserId();
   const { data } = await apiClient.patch(
-      `/fridges/${fridgeId}/items/${itemId}?userId=${userId}`,
+      `/fridges/${fridgeId}/items/${itemId}`,
       itemData
   );
   return data;
@@ -140,9 +129,8 @@ export const updateFridgeItemApi = async (fridgeId, itemId, itemData) => {
 
 export const deleteFridgeItemApi = async (fridgeId, itemId) => {
   if (!isLoggedIn()) return deleteLocalFridgeItem(fridgeId, itemId);
-  const userId = getUserId();
   const { data } = await apiClient.delete(
-      `/fridges/${fridgeId}/items/${itemId}?userId=${userId}`
+      `/fridges/${fridgeId}/items/${itemId}`
   );
   return data;
 };
@@ -150,17 +138,15 @@ export const deleteFridgeItemApi = async (fridgeId, itemId) => {
 // ───────── 냉동실 아이템 ─────────
 
 export const getFreezerItemsApi = async (fridgeId) => {
-  if (!isLoggedIn()) return getLocalFreezerItems(fridgeId);
-  const userId = getUserId();
-  const { data } = await apiClient.get(`/fridges/${fridgeId}/freezer-items?userId=${userId}`);
-  return data;
+  if (!isLoggedIn()) return asArray(getLocalFreezerItems(fridgeId));
+  const { data } = await apiClient.get(`/fridges/${fridgeId}/freezer-items`);
+  return asArray(data);
 };
 
 export const createFreezerItemApi = async (fridgeId, itemData) => {
   if (!isLoggedIn()) return createLocalFreezerItem(fridgeId, itemData);
-  const userId = getUserId();
   const { data } = await apiClient.post(
-      `/fridges/${fridgeId}/freezer-items?userId=${userId}`,
+      `/fridges/${fridgeId}/freezer-items`,
       itemData
   );
   return data;
@@ -168,9 +154,8 @@ export const createFreezerItemApi = async (fridgeId, itemData) => {
 
 export const updateFreezerItemApi = async (fridgeId, itemId, itemData) => {
   if (!isLoggedIn()) return updateLocalFreezerItem(fridgeId, itemId, itemData);
-  const userId = getUserId();
   const { data } = await apiClient.patch(
-      `/fridges/${fridgeId}/freezer-items/${itemId}?userId=${userId}`,
+      `/fridges/${fridgeId}/freezer-items/${itemId}`,
       itemData
   );
   return data;
@@ -178,9 +163,8 @@ export const updateFreezerItemApi = async (fridgeId, itemId, itemData) => {
 
 export const deleteFreezerItemApi = async (fridgeId, itemId) => {
   if (!isLoggedIn()) return deleteLocalFreezerItem(fridgeId, itemId);
-  const userId = getUserId();
   const { data } = await apiClient.delete(
-      `/fridges/${fridgeId}/freezer-items/${itemId}?userId=${userId}`
+      `/fridges/${fridgeId}/freezer-items/${itemId}`
   );
   return data;
 };
@@ -226,7 +210,6 @@ export const getAllItemsAcrossFridgesApi = async () => {
     rows.sort((a, b) => (a.name || "").localeCompare(b.name || "", "ko"));
     return rows;
   }
-  const userId = getUserId();
-  const { data } = await apiClient.get(`/fridges/all-items?userId=${userId}`);
+  const { data } = await apiClient.get("/fridges/all-items");
   return data;
 };

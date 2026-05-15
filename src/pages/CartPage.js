@@ -8,7 +8,7 @@ import {
   toggleShoppingItemApi,
   deleteShoppingItemApi,
 } from "../api/recipe";
-import { getUserIdFromToken, isLoggedIn } from "../utils/jwt";
+import { isLoggedIn } from "../utils/jwt";
 import { getGuestCatalogExtras } from "../utils/storage";
 import { coupangPurchaseUrl } from "../utils/coupangLink";
 import { useToast } from "../context/ToastContext";
@@ -21,7 +21,6 @@ const CartPage = () => {
   const [catalogSuggestions, setCatalogSuggestions] = useState([]);
   const catalogTimerRef = useRef(null);
   const suppressNextCatalogFetchRef = useRef(false);
-  const userId = getUserIdFromToken();
 
   const loadShopping = useCallback(async () => {
     try {
@@ -50,7 +49,7 @@ const CartPage = () => {
     if (catalogTimerRef.current) clearTimeout(catalogTimerRef.current);
     catalogTimerRef.current = setTimeout(async () => {
       try {
-        const rows = await getIngredientCatalogApi(q, userId || null, "전체");
+        const rows = await getIngredientCatalogApi(q, "전체");
         const list = Array.isArray(rows) ? [...rows] : [];
         const seen = new Set(list.map((r) => r.name));
         if (!isLoggedIn()) {
@@ -76,7 +75,7 @@ const CartPage = () => {
     return () => {
       if (catalogTimerRef.current) clearTimeout(catalogTimerRef.current);
     };
-  }, [manualName, userId]);
+  }, [manualName]);
 
   const addManualToCart = async () => {
     const name = manualName.trim();
@@ -132,7 +131,7 @@ const CartPage = () => {
         <h1 className="complete-title">장바구니</h1>
       </div>
 
-      <p className="complete-lead">부족했던 재료와 직접 적은 항목을 한곳에서 관리해요.</p>
+      <p className="complete-lead">부족한 재료와 직접 담은 항목을 관리해요.</p>
 
       <div className="complete-manual-add">
         <div className="complete-section-label">장바구니에 직접 담기</div>

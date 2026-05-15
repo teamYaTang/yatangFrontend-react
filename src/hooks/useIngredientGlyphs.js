@@ -45,7 +45,7 @@ export function useIngredientGlyphs() {
       const uid = getUserIdFromToken();
       if (!uid) return;
       try {
-        const m = await getIngredientImageMapApi(uid);
+        const m = await getIngredientImageMapApi();
         if (!cancelled) setUserIngredientImageMap(m || {});
       } catch (e) {
         console.error(e);

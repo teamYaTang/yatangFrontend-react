@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../styles/Ingredient.css";
 import { FiPlus, FiTrash2, FiX } from "react-icons/fi";
@@ -27,6 +28,7 @@ import {
 } from "../api/ingredientCatalog";
 import { getIngredientImageMapApi } from "../api/ingredientImages";
 import { getUserProfile } from "../api/auth";
+import { ensureAccessToken, clearAuthTokens } from "../api/apiClient";
 import { getUserIdFromToken, isLoggedIn } from "../utils/jwt";
 import { getGuestCatalogExtras, addGuestCatalogExtra, removeGuestCatalogExtra } from "../utils/storage";
 import { useToast } from "../context/ToastContext";
@@ -156,7 +158,7 @@ const Ingredient = () => {
       const uid = getUserIdFromToken();
       if (!uid) return;
       try {
-        const m = await getIngredientImageMapApi(uid);
+        const m = await getIngredientImageMapApi();
         if (!cancelled) setUserIngredientImageMap(m || {});
       } catch (e) {
         console.error(e);
@@ -222,19 +224,27 @@ const Ingredient = () => {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        if (isLoggedIn()) {
-          const userId = getUserIdFromToken();
-          if (userId) {
-            const profile = await getUserProfile(userId);
+        let loggedIn = isLoggedIn();
+        if (loggedIn) {
+          const ok = await ensureAccessToken();
+          if (!ok) loggedIn = false;
+        }
+        if (loggedIn) {
+          try {
+            const profile = await getUserProfile();
             setUserNickname(profile.nickname || profile.username || "");
-          } else {
+          } catch (e) {
+            const st = e.response?.status;
+            if (st === 401 || st === 403) throw e;
+            console.error(e);
             setUserNickname("");
           }
         } else {
           setUserNickname("게스트");
         }
 
-        const userFridges = await getUserFridgesApi();
+        const rawFridges = await getUserFridgesApi();
+        const userFridges = Array.isArray(rawFridges) ? rawFridges : [];
         setFridges(userFridges);
 
         let initialFridgeId = location.state?.selectedFridgeId;
@@ -254,6 +264,13 @@ const Ingredient = () => {
         await loadAllItems();
       } catch (error) {
         console.error("데이터 로딩 에러:", error);
+        const status = error.response?.status;
+        if (status === 401 || status === 403) {
+          clearAuthTokens();
+          toast("로그인이 만료되었습니다. 다시 로그인해주세요.");
+          navigate("/signin", { replace: true });
+          return;
+        }
         toast("데이터를 불러오는데 실패했습니다.");
       } finally {
         setLoading(false);
@@ -775,8 +792,7 @@ const Ingredient = () => {
   const refreshCatalog = useCallback(async () => {
     setCatalogLoading(true);
     try {
-      const uid = isLoggedIn() ? getUserIdFromToken() : null;
-      const server = await getIngredientCatalogApi(catalogSearch, uid, catalogCategory);
+      const server = await getIngredientCatalogApi(catalogSearch, catalogCategory);
       const extras = getGuestCatalogExtras().map((x, i) => ({
         id: `guest-extra-${i}-${x.name}`,
         name: x.name,
@@ -848,7 +864,7 @@ const Ingredient = () => {
       if (isLoggedIn()) {
         const uid = getUserIdFromToken();
         if (!uid) throw new Error("로그인이 필요합니다.");
-        await uploadIngredientImageApi(uid, name, file);
+        await uploadIngredientImageApi(name, file);
         await refreshCatalog();
         window.dispatchEvent(new Event("yatang-ingredient-images-changed"));
         toast("재료 사진을 등록했습니다.");
@@ -1441,40 +1457,47 @@ const Ingredient = () => {
         </button>
       </div>
 
-      {duplicateDecision && (
-        <div className="ingredient-duplicate-modal-overlay" role="dialog" aria-modal="true">
-          <div className="ingredient-duplicate-modal">
-            <div className="ingredient-duplicate-modal-title">중복 아이템 발견</div>
-            <div className="ingredient-duplicate-modal-body">
-              기존에 있는{" "}
-              <span className="ingredient-duplicate-existing-name">{duplicateDecision.existingItem.name}</span>(
-              {duplicateDecision.existingItem.unit})에 추가하시겠습니까?
+      {duplicateDecision &&
+        createPortal(
+          <div className="ingredient-duplicate-modal-overlay" role="dialog" aria-modal="true">
+            <div className="ingredient-duplicate-modal">
+              <div className="ingredient-duplicate-modal-title">중복 아이템 발견</div>
+              <div className="ingredient-duplicate-modal-body">
+                기존에 있는{" "}
+                <span className="ingredient-duplicate-existing-name">{duplicateDecision.existingItem.name}</span>(
+                {duplicateDecision.existingItem.unit})에 추가하시겠습니까?
+              </div>
+              <div className="ingredient-duplicate-modal-actions">
+                <button
+                  className="ingredient-modal-button ingredient-modal-button-primary"
+                  onClick={handleDuplicateConfirmAddQuantity}
+                  disabled={duplicateProcessing}
+                >
+                  확인
+                </button>
+                <button
+                  className="ingredient-modal-button"
+                  onClick={handleDuplicateConfirmAddNewItem}
+                  disabled={duplicateProcessing}
+                >
+                  새로 추가
+                </button>
+                <button
+                  className="ingredient-modal-button"
+                  onClick={handleDuplicateCancel}
+                  disabled={duplicateProcessing}
+                >
+                  취소
+                </button>
+              </div>
             </div>
-            <div className="ingredient-duplicate-modal-actions">
-              <button
-                className="ingredient-modal-button ingredient-modal-button-primary"
-                onClick={handleDuplicateConfirmAddQuantity}
-                disabled={duplicateProcessing}
-              >
-                확인
-              </button>
-              <button
-                className="ingredient-modal-button"
-                onClick={handleDuplicateConfirmAddNewItem}
-                disabled={duplicateProcessing}
-              >
-                새로 추가
-              </button>
-              <button className="ingredient-modal-button" onClick={handleDuplicateCancel} disabled={duplicateProcessing}>
-                취소
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body,
+        )}
 
-      {catalogOpen && (
-        <div className="ingredient-duplicate-modal-overlay" role="dialog" aria-modal="true">
+      {catalogOpen &&
+        createPortal(
+          <div className="ingredient-duplicate-modal-overlay" role="dialog" aria-modal="true">
           <div className="ingredient-catalog-modal">
             <div className="ingredient-catalog-modal-header">
               <div className="ingredient-catalog-modal-title">재료 추가</div>
@@ -1714,11 +1737,13 @@ const Ingredient = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
 
-      {editModal && (
-        <div className="ingredient-duplicate-modal-overlay" role="dialog" aria-modal="true">
+      {editModal &&
+        createPortal(
+          <div className="ingredient-duplicate-modal-overlay" role="dialog" aria-modal="true">
           <div className="ingredient-edit-modal">
             <div className="ingredient-edit-modal-header">
               <div className="ingredient-duplicate-modal-title">재료 수정</div>
@@ -1892,7 +1917,8 @@ const Ingredient = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

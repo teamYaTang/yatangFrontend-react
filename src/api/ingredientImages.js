@@ -1,14 +1,13 @@
 import apiClient from "./apiClient";
 
 /** @returns {Promise<Record<string, string>>} name(lower) → 공개 이미지 URL */
-export const getIngredientImageMapApi = async (userId) => {
-  const { data } = await apiClient.get(`/ingredient-images/map?userId=${userId}`);
+export const getIngredientImageMapApi = async () => {
+  const { data } = await apiClient.get("/ingredient-images/map");
   return data && typeof data === "object" ? data : {};
 };
 
-export const uploadIngredientImageApi = async (userId, ingredientName, file) => {
+export const uploadIngredientImageApi = async (ingredientName, file) => {
   const form = new FormData();
-  form.append("userId", String(userId));
   form.append("ingredientName", ingredientName);
   form.append("file", file);
   await apiClient.post("/ingredient-images", form, {
@@ -16,8 +15,8 @@ export const uploadIngredientImageApi = async (userId, ingredientName, file) => 
   });
 };
 
-export const deleteIngredientImageApi = async (userId, ingredientName) => {
+export const deleteIngredientImageApi = async (ingredientName) => {
   await apiClient.delete("/ingredient-images", {
-    params: { userId, ingredientName },
+    params: { ingredientName },
   });
 };

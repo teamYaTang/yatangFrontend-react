@@ -5,9 +5,11 @@ import "../styles/SignIn.css";
 // import LogoImg from "../assets/LogoImg.png";
 import LogoImg from "../assets/jibbabbuja_logo.png";
 import { signin } from "../api/auth";
+import { clearAuthTokens, ensureAccessToken } from "../api/apiClient";
 import { hasGuestData, getAllGuestData, clearAllGuestData } from "../utils/storage";
 import { importGuestDataApi } from "../api/refrigerator";
 import { useToast } from "../context/ToastContext";
+import { getUserIdFromToken, isLoggedIn } from "../utils/jwt";
 import { startOAuthLogin } from "../utils/oauthRedirect";
 import "../styles/SignUp.css";
 
@@ -48,8 +50,11 @@ const SignIn = () => {
     e.preventDefault();
     if (!isResult) return;
 
+    // 이전 세션이 남아 있으면 로그인 실패 후에도 "로그인된 것처럼" 보이거나 냉장고로 튕길 수 있음
+    clearAuthTokens();
+
     signin({ username: userid, password: userpw })
-      .then((data) => {
+      .then(() => {
         if (hasGuestData()) {
           setShowGuestPrompt(true);
           return;
@@ -94,10 +99,30 @@ const SignIn = () => {
     navigate("/refrigerator");
   };
 
-  useEffect(() => {
-    if (localStorage.getItem("accessToken")) {
-      navigate("/refrigerator");
+  const handleContinueAsGuest = () => {
+    if (
+      !window.confirm(
+        "비회원은 냉장고 갯수, AI메뉴 추천 횟수 등이 제한될 수 있습니다. 그래도 비회원으로 이용하시겠습니까?",
+      )
+    ) {
+      return;
     }
+    navigate("/refrigerator");
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!isLoggedIn()) return;
+      const ok = await ensureAccessToken();
+      if (cancelled) return;
+      if (ok && getUserIdFromToken()) {
+        navigate("/refrigerator", { replace: true });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [navigate]);
 
   return (
@@ -179,6 +204,10 @@ const SignIn = () => {
             회원가입
           </button>
         </p>
+
+        <button type="button" className="signin-continue-guest" onClick={handleContinueAsGuest}>
+          계속 비회원으로 이용하기
+        </button>
       </div>
 
       {showGuestPrompt && (

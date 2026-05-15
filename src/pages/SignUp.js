@@ -5,6 +5,8 @@ import "../styles/SignUp.css";
 import { signup } from "../api/auth";
 import { startOAuthLogin } from "../utils/oauthRedirect";
 import { useToast } from "../context/ToastContext";
+import { getUserIdFromToken, isLoggedIn } from "../utils/jwt";
+import { ensureAccessToken } from "../api/apiClient";
 
 const SignUp = () => {
   const navigate = useNavigate();
@@ -75,9 +77,18 @@ const SignUp = () => {
   };
 
   useEffect(() => {
-    if (localStorage.getItem("accessToken")) {
-      navigate("/refrigerator");
-    }
+    let cancelled = false;
+    (async () => {
+      if (!isLoggedIn()) return;
+      const ok = await ensureAccessToken();
+      if (cancelled) return;
+      if (ok && getUserIdFromToken()) {
+        navigate("/refrigerator", { replace: true });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [navigate]);
 
   return (

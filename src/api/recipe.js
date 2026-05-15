@@ -1,5 +1,6 @@
 import apiClient from "./apiClient";
-import { getUserIdFromToken, isLoggedIn } from "../utils/jwt";
+import { isLoggedIn } from "../utils/jwt";
+import { aiSuggestRequestHeaders } from "../utils/guestAiSession";
 import {
   addGuestRecipeBook,
   addGuestShoppingBatch,
@@ -10,60 +11,62 @@ import {
   toggleGuestShoppingItem,
 } from "../utils/storage";
 
-const getUserId = () => {
-  const id = getUserIdFromToken();
-  if (!id) throw new Error("로그인이 필요합니다.");
-  return id;
+/** 오늘(기기 로컬 날짜 기준) AI 추천 남은 횟수 등 */
+export const getRecipeSuggestQuotaApi = async () => {
+  const { data } = await apiClient.get("/recipes/suggest-quota", { headers: { ...aiSuggestRequestHeaders() } });
+  return data;
 };
 
-/** 보유 재료로 AI 레시피 3개 (서버에서 OpenAI 호출, 로그인 필요) */
-export const postRecipeSuggestApi = async (ingredients) => {
-  const { data } = await apiClient.post("/recipes/suggest", { ingredients });
+/**
+ * 보유 재료로 AI 레시피 3개 (비회원은 X-Guest-Session-Id, 회원은 JWT)
+ * @param {Array} ingredients
+ * @param {{ recentRecipeTitles?: string[] }} [options]
+ */
+export const postRecipeSuggestApi = async (ingredients, options = {}) => {
+  const body = {
+    ingredients,
+    ...(options.recentRecipeTitles?.length ? { recentRecipeTitles: options.recentRecipeTitles } : {}),
+  };
+  const { data } = await apiClient.post("/recipes/suggest", body, { headers: { ...aiSuggestRequestHeaders() } });
   return data;
 };
 
 /** 장바구니 목록 */
 export const getShoppingListApi = async () => {
   if (!isLoggedIn()) return getGuestShoppingList();
-  const userId = getUserId();
-  const { data } = await apiClient.get(`/shopping-list?userId=${userId}`);
+  const { data } = await apiClient.get("/shopping-list");
   return data;
 };
 
 /** 부족 재료 일괄 추가 */
 export const addShoppingBatchApi = async (lines) => {
   if (!isLoggedIn()) return addGuestShoppingBatch(lines);
-  const userId = getUserId();
-  const { data } = await apiClient.post(`/shopping-list/batch?userId=${userId}`, lines);
+  const { data } = await apiClient.post("/shopping-list/batch", lines);
   return data;
 };
 
 /** 장바구니 한 줄 추가 (직접 담기) */
 export const addShoppingItemApi = async (line) => {
   if (!isLoggedIn()) return addGuestShoppingBatch([line]);
-  const userId = getUserId();
-  const { data } = await apiClient.post(`/shopping-list?userId=${userId}`, line);
+  const { data } = await apiClient.post("/shopping-list", line);
   return data;
 };
 
 export const toggleShoppingItemApi = async (itemId) => {
   if (!isLoggedIn()) return toggleGuestShoppingItem(itemId);
-  const userId = getUserId();
-  const { data } = await apiClient.patch(`/shopping-list/${itemId}/toggle?userId=${userId}`);
+  const { data } = await apiClient.patch(`/shopping-list/${itemId}/toggle`);
   return data;
 };
 
 export const deleteShoppingItemApi = async (itemId) => {
   if (!isLoggedIn()) return deleteGuestShoppingItem(itemId);
-  const userId = getUserId();
-  await apiClient.delete(`/shopping-list/${itemId}?userId=${userId}`);
+  await apiClient.delete(`/shopping-list/${itemId}`);
 };
 
 /** 레시피북 목록 */
 export const getRecipeBookListApi = async () => {
   if (!isLoggedIn()) return getGuestRecipeBook();
-  const userId = getUserId();
-  const { data } = await apiClient.get(`/recipe-book?userId=${userId}`);
+  const { data } = await apiClient.get("/recipe-book");
   return data;
 };
 
@@ -80,20 +83,17 @@ export const getRecipeBookDetailApi = async (id) => {
       createdAt: row.createdAt,
     };
   }
-  const userId = getUserId();
-  const { data } = await apiClient.get(`/recipe-book/${id}?userId=${userId}`);
+  const { data } = await apiClient.get(`/recipe-book/${id}`);
   return data;
 };
 
 export const saveRecipeToBookApi = async (recipe) => {
   if (!isLoggedIn()) return addGuestRecipeBook(recipe);
-  const userId = getUserId();
-  const { data } = await apiClient.post(`/recipe-book?userId=${userId}`, { recipe });
+  const { data } = await apiClient.post("/recipe-book", { recipe });
   return data;
 };
 
 export const deleteRecipeFromBookApi = async (id) => {
   if (!isLoggedIn()) return deleteGuestRecipeBook(id);
-  const userId = getUserId();
-  await apiClient.delete(`/recipe-book/${id}?userId=${userId}`);
+  await apiClient.delete(`/recipe-book/${id}`);
 };

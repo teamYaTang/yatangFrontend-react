@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import "../styles/NickName.css";
 
 import { updateNickname } from "../api/auth";
-import { getUserIdFromToken } from "../utils/jwt";
+import { getUserIdFromToken, isLoggedIn } from "../utils/jwt";
+import { ensureAccessToken } from "../api/apiClient";
 import { useToast } from "../context/ToastContext";
 
 const NickName = () => {
@@ -23,16 +24,23 @@ const NickName = () => {
     e.preventDefault();
     if (!isValid || loading) return;
 
+    if (!isLoggedIn()) {
+      toast("로그인이 필요합니다.");
+      navigate("/signin", { replace: true });
+      return;
+    }
+
+    await ensureAccessToken();
     const userId = getUserIdFromToken();
     if (!userId) {
       toast("로그인이 필요합니다.");
-      navigate("/");
+      navigate("/signin", { replace: true });
       return;
     }
 
     try {
       setLoading(true);
-      await updateNickname(userId, nickname);
+      await updateNickname(nickname);
       toast("닉네임이 저장되었습니다.");
       navigate("/refrigerator");
     } catch (error) {
@@ -43,9 +51,21 @@ const NickName = () => {
   };
 
   useEffect(() => {
-    if (!localStorage.getItem("accessToken")) {
-      navigate("/");
-    }
+    let cancelled = false;
+    (async () => {
+      if (!isLoggedIn()) {
+        navigate("/signin", { replace: true });
+        return;
+      }
+      await ensureAccessToken();
+      if (cancelled) return;
+      if (!getUserIdFromToken()) {
+        navigate("/signin", { replace: true });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [navigate]);
 
   return (

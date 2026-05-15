@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { FiShoppingCart, FiEdit2, FiHome, FiZap, FiStar } from "react-icons/fi";
+import {FiShoppingCart, FiEdit2, FiHome, FiZap, FiStar, FiEdit, FiBookmark} from "react-icons/fi";
+import { CgSmartHomeRefrigerator } from "react-icons/cg";
+import { BiDish, BiFoodMenu } from "react-icons/bi";
 import "../styles/AppBottomNav.css";
 import { getShoppingListApi, getRecipeBookListApi } from "../api/recipe";
 import { mainNavIndex } from "../shared/mainNavConfig";
@@ -79,7 +81,7 @@ export default function AppBottomNav() {
           aria-current={idx === 1 ? "page" : undefined}
         >
           <span className="app-bottom-nav__icon-wrap">
-            <FiEdit2 size={22} aria-hidden />
+            <FiEdit size={22} aria-hidden />
           </span>
           <span className="app-bottom-nav__label">재료</span>
         </button>
@@ -91,7 +93,7 @@ export default function AppBottomNav() {
           aria-current={idx === 2 ? "page" : undefined}
         >
           <span className="app-bottom-nav__icon-wrap">
-            <FiHome size={26} aria-hidden />
+            <CgSmartHomeRefrigerator size={26} aria-hidden />
           </span>
           <span className="app-bottom-nav__label">냉장고</span>
         </button>
@@ -103,7 +105,7 @@ export default function AppBottomNav() {
           aria-current={idx === 3 ? "page" : undefined}
         >
           <span className="app-bottom-nav__icon-wrap">
-            <FiZap size={22} aria-hidden />
+            <BiDish size={22} aria-hidden />
           </span>
           <span className="app-bottom-nav__label">AI</span>
         </button>
@@ -115,7 +117,7 @@ export default function AppBottomNav() {
           aria-current={idx === 4 ? "page" : undefined}
         >
           <span className="app-bottom-nav__icon-wrap">
-            <FiStar size={22} aria-hidden />
+            <BiFoodMenu size={22} aria-hidden />
             {bookCount > 0 ? <span className="app-bottom-nav__badge">{bookCount > 99 ? "99+" : bookCount}</span> : null}
           </span>
           <span className="app-bottom-nav__label">레시피북</span>

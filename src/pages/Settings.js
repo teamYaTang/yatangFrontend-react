@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FiArrowLeft, FiUser, FiLock, FiGrid, FiPlus } from "react-icons/fi";
-import { getUserIdFromToken } from "../utils/jwt";
-import { getUserProfile, updateNickname, updatePasswordApi } from "../api/auth";
+import { getUserIdFromToken, isLoggedIn } from "../utils/jwt";
+import { getUserProfile, logoutApi, updateNickname, updatePasswordApi } from "../api/auth";
+import { clearAuthTokens, ensureAccessToken } from "../api/apiClient";
 import { getUserFridgesApi, createFridgeApi, updateFridgeApi, deleteFridgeApi } from "../api/refrigerator";
 import { useToast } from "../context/ToastContext";
 import "../styles/Settings.css";
@@ -11,7 +12,6 @@ const Settings = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const toast = useToast();
-    const userId = getUserIdFromToken();
     const [activeTab, setActiveTab] = useState("fridge"); // 'profile' | 'fridge' — 첫 탭이 냉장고 관리
     const [loading, setLoading] = useState(false);
 
@@ -40,27 +40,40 @@ const Settings = () => {
     const fetchData = useCallback(async () => {
         try {
             setLoading(true);
-            const user = await getUserProfile(userId);
+            const user = await getUserProfile();
             setProfile(user);
             setNewNickname(user.nickname);
 
             const fridgeList = await getUserFridgesApi();
-            setFridges(fridgeList);
+            setFridges(Array.isArray(fridgeList) ? fridgeList : []);
         } catch (error) {
             console.error("데이터 불러오기 실패:", error);
         } finally {
             setLoading(false);
         }
-    }, [userId]);
+    }, []);
 
     useEffect(() => {
-        if (!userId) {
-            toast("로그인이 필요합니다.");
-            navigate("/");
-            return;
-        }
-        fetchData();
-    }, [userId, navigate, fetchData, toast]);
+        let cancelled = false;
+        (async () => {
+            if (!isLoggedIn()) {
+                navigate("/signin", { replace: true });
+                return;
+            }
+            const ok = await ensureAccessToken();
+            if (cancelled) return;
+            if (!ok || !getUserIdFromToken()) {
+                clearAuthTokens();
+                toast("로그인 정보가 만료되었습니다. 다시 로그인해주세요.");
+                navigate("/signin", { replace: true });
+                return;
+            }
+            fetchData();
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [navigate, fetchData, toast]);
 
     useEffect(() => {
         const t = location.state?.settingsTab;
@@ -73,7 +86,7 @@ const Settings = () => {
     const handleNicknameChange = async () => {
         if (!newNickname.trim() || newNickname === profile.nickname) return;
         try {
-            await updateNickname(userId, newNickname);
+            await updateNickname(newNickname);
             toast("닉네임이 변경되었습니다.");
             fetchData();
         } catch (error) {
@@ -81,9 +94,9 @@ const Settings = () => {
         }
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
         if (!window.confirm("로그아웃할까요?")) return;
-        localStorage.removeItem("accessToken");
+        await logoutApi();
         toast("로그아웃되었습니다.");
         navigate("/");
     };
@@ -104,9 +117,9 @@ const Settings = () => {
         }
 
         try {
-            await updatePasswordApi(userId, current, newPass);
+            await updatePasswordApi(current, newPass);
             toast("비밀번호가 변경되었습니다. 다시 로그인해주세요.");
-            localStorage.removeItem("accessToken");
+            clearAuthTokens();
             navigate("/");
         } catch (error) {
             toast(error.message);
