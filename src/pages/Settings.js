@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FiArrowLeft, FiUser, FiLock, FiGrid, FiPlus } from "react-icons/fi";
 import { getUserIdFromToken, isLoggedIn } from "../utils/jwt";
-import { getUserProfile, logoutApi, updateNickname, updatePasswordApi } from "../api/auth";
+import { getUserProfile, logoutApi, updateNickname, updatePasswordApi, deleteAccountApi } from "../api/auth";
 import { clearAuthTokens, ensureAccessToken } from "../api/apiClient";
 import { getUserFridgesApi, createFridgeApi, updateFridgeApi, deleteFridgeApi } from "../api/refrigerator";
 import { useToast } from "../context/ToastContext";
@@ -99,6 +99,27 @@ const Settings = () => {
         await logoutApi();
         toast("로그아웃되었습니다.");
         navigate("/");
+    };
+
+    const isPasswordLoginAccount =
+        Boolean(profile.email) && (!profile.loginType || profile.loginType === "NORMAL");
+
+    const handleDeleteAccount = async () => {
+        if (
+            !window.confirm(
+                "회원 탈퇴 시 냉장고, 재료, 레시피북, 장바구니 등 계정과 연결된 모든 데이터가 즉시 삭제되며 복구할 수 없습니다.\n\n정말 탈퇴하시겠습니까?",
+            )
+        ) {
+            return;
+        }
+
+        try {
+            await deleteAccountApi();
+            toast("회원 탈퇴가 완료되었습니다.");
+            navigate("/signin", { replace: true });
+        } catch (error) {
+            toast(error.message || "회원 탈퇴에 실패했습니다.");
+        }
     };
 
     const handlePasswordChange = async () => {
@@ -386,38 +407,52 @@ const Settings = () => {
                         </button>
                     </div>
 
-                    {/* Password Card */}
-                    <div className="settings-card">
-                        <div className="settings-card-title">
-                            <FiLock /> 비밀번호 변경
+                    {isPasswordLoginAccount && (
+                        <div className="settings-card">
+                            <div className="settings-card-title">
+                                <FiLock /> 비밀번호 변경
+                            </div>
+                            <div className="settings-input-group">
+                                <input
+                                    className="settings-input"
+                                    type="password"
+                                    placeholder="현재 비밀번호"
+                                    value={passwords.current}
+                                    onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+                                />
+                                <input
+                                    className="settings-input"
+                                    type="password"
+                                    placeholder="새 비밀번호"
+                                    value={passwords.new}
+                                    onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
+                                />
+                                <input
+                                    className="settings-input"
+                                    type="password"
+                                    placeholder="새 비밀번호 확인"
+                                    value={passwords.confirm}
+                                    onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+                                />
+                            </div>
+                            <button className="settings-button" onClick={handlePasswordChange}>
+                                비밀번호 변경하기
+                            </button>
                         </div>
-                        <div className="settings-input-group">
-                            <input
-                                className="settings-input"
-                                type="password"
-                                placeholder="현재 비밀번호"
-                                value={passwords.current}
-                                onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-                            />
-                            <input
-                                className="settings-input"
-                                type="password"
-                                placeholder="새 비밀번호"
-                                value={passwords.new}
-                                onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
-                            />
-                            <input
-                                className="settings-input"
-                                type="password"
-                                placeholder="새 비밀번호 확인"
-                                value={passwords.confirm}
-                                onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-                            />
+                    )}
+
+                    {!isPasswordLoginAccount && (
+                        <div className="settings-card settings-card--hint">
+                            <p className="settings-social-hint">
+                                {profile.loginType === "GOOGLE"
+                                    ? "Google"
+                                    : profile.loginType === "KAKAO"
+                                      ? "카카오"
+                                      : "소셜"}{" "}
+                                로그인 계정입니다. 비밀번호는 해당 서비스에서 관리됩니다.
+                            </p>
                         </div>
-                        <button className="settings-button" onClick={handlePasswordChange}>
-                            비밀번호 변경하기
-                        </button>
-                    </div>
+                    )}
 
                     <div className="settings-card settings-card--logout">
                         <button
@@ -426,6 +461,16 @@ const Settings = () => {
                             onClick={handleLogout}
                         >
                             로그아웃
+                        </button>
+                    </div>
+
+                    <div className="settings-card settings-card--danger">
+                        <button
+                            type="button"
+                            className="settings-button settings-button--danger"
+                            onClick={handleDeleteAccount}
+                        >
+                            회원 탈퇴
                         </button>
                     </div>
                 </div>

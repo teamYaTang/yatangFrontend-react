@@ -207,3 +207,29 @@
   background: linear-gradient(120deg, #4c6ef5, #5ed4f3);
   color: #ffffff;
 }
+
+.signin-modal--done {
+  text-align: center;
+}
+
+.signin-modal-done-icon {
+  font-size: 2rem;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.signin-modal-actions--stack {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.signin-modal-button-block {
+  width: 100%;
+}
+
+.signin-modal-button-muted {
+  background: transparent;
+  color: #64748b;
+  font-weight: 600;
+}

@@ -154,6 +154,17 @@ export async function updateNickname(nickname) {
     });
 }
 
+/** 회원 탈퇴 (서버 데이터 삭제 후 로컬 토큰 제거) */
+export async function deleteAccountApi() {
+  try {
+    await apiClient.delete("/users/0/account");
+  } catch (error) {
+    throw new Error(error.response?.data?.message || "회원 탈퇴에 실패했습니다.");
+  } finally {
+    clearAuthTokens();
+  }
+}
+
 // 비밀번호 변경
 export async function updatePasswordApi(currentPassword, newPassword) {
   return apiClient

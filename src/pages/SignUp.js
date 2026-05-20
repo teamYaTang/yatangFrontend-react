@@ -67,7 +67,7 @@ const SignUp = () => {
     })
       .then(() => {
         toast("회원가입이 완료되었습니다. 로그인 해주세요.");
-        navigate("/");
+        navigate("/signin", { replace: true });
       })
       .catch((error) => toast(error.message));
   };
@@ -185,7 +185,7 @@ const SignUp = () => {
 
         <p className="signup-signin-text">
           이미 계정이 있으신가요?{" "}
-          <button className="signup-signin-link" type="button" onClick={() => navigate("/")}>
+          <button className="signup-signin-link" type="button" onClick={() => navigate("/signin")}>
             로그인
           </button>
         </p>
