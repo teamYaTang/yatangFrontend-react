@@ -1,12 +1,19 @@
 .main-shell {
   min-height: 100vh;
+  min-height: 100dvh;
   position: relative;
+  width: 100%;
+  overflow-x: hidden;
+  background: #f6f8fb;
 }
 
 .main-shell-outlet {
   min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
   padding-bottom: calc(88px + env(safe-area-inset-bottom, 0));
   box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* 인스타 스토리 넘기듯: 다음/이전 탭으로 이동 시 살짝 슬라이드 */

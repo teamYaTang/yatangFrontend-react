@@ -4,12 +4,26 @@ import AppBottomNav from "../components/AppBottomNav";
 import { mainNavIndex } from "../shared/mainNavConfig";
 import "../styles/MainShell.css";
 
+function scrollWindowToTop() {
+  try {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  } catch {
+    window.scrollTo(0, 0);
+  }
+  if (document.documentElement) document.documentElement.scrollTop = 0;
+  if (document.body) document.body.scrollTop = 0;
+}
+
 export default function MainShell() {
   const location = useLocation();
   const { pathname } = location;
 
   const navRef = useRef({ lastMain: null });
   const [slideClass, setSlideClass] = useState("");
+
+  useLayoutEffect(() => {
+    scrollWindowToTop();
+  }, [pathname]);
 
   useLayoutEffect(() => {
     const idx = mainNavIndex(pathname);

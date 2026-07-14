@@ -1,9 +1,9 @@
 import axios from "axios";
+import { getApiBaseUrl } from "../config/appApi";
 import { shouldRefreshAccessToken } from "../utils/jwt";
 
 const apiClient = axios.create({
-  // 프록시를 통해 /api로 요청하면 자동으로 백엔드로 전달됩니다
-  baseURL: "/api",
+  baseURL: getApiBaseUrl(),
 });
 
 const ACCESS_TOKEN_KEY = "accessToken";
@@ -53,7 +53,7 @@ const refreshAccessToken = async () => {
     throw new Error("refresh token이 없습니다.");
   }
 
-  const response = await axios.post("/api/auth/refresh", { refreshToken });
+  const response = await axios.post(`${getApiBaseUrl()}/auth/refresh`, { refreshToken });
   setAuthTokens(response.data);
   return response.data.accessToken;
 };

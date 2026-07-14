@@ -24,8 +24,15 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:mobile": "react-scripts build && npx cap sync",
+    "build:mobile:remote": "CAPACITOR_SERVER_URL=http://jibbabbuja.duckdns.org react-scripts build && CAPACITOR_SERVER_URL=http://jibbabbuja.duckdns.org npx cap sync",
+    "build:mobile:remote:ios": "CAPACITOR_SERVER_URL=http://jibbabbuja.duckdns.org react-scripts build && CAPACITOR_SERVER_URL=http://jibbabbuja.duckdns.org npx cap sync ios",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "cap:sync": "npx cap sync",
+    "cap:sync:android": "npx cap sync android",
+    "cap:open:android": "npx cap open android",
+    "cap:open:ios": "npx cap open ios"
   },
   "eslintConfig": {
     "extends": [

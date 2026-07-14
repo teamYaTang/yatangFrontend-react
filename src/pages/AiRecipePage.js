@@ -20,6 +20,7 @@ import {
   shoppingBatchErrorMessage,
 } from "../utils/recipeCartShared";
 import { notifyRecipeBookChanged, notifyShoppingChanged } from "../components/AppBottomNav";
+import { stripLeadingStepNumber } from "../utils/recipeSteps";
 
 const AiRecipePage = () => {
   const navigate = useNavigate();
@@ -421,7 +422,7 @@ const AiRecipePage = () => {
                           <div className="complete-section-label">만드는 순서</div>
                           <ol>
                             {(r.steps || []).map((s, i) => (
-                              <li key={i}>{s}</li>
+                              <li key={i}>{stripLeadingStepNumber(s)}</li>
                             ))}
                           </ol>
                           {recentMissing.length > 0 && (
@@ -538,7 +539,7 @@ const AiRecipePage = () => {
               <div className="complete-section-label">만드는 순서</div>
               <ol>
                 {(r.steps || []).map((s, i) => (
-                  <li key={i}>{s}</li>
+                  <li key={i}>{stripLeadingStepNumber(s)}</li>
                 ))}
               </ol>
 

@@ -5,6 +5,7 @@ import { useToast } from "../context/ToastContext";
 import { CatalogIngredientGlyph } from "../constants/ingredientCatalogVisuals";
 import { useIngredientGlyphs } from "../hooks/useIngredientGlyphs";
 import { notifyRecipeBookChanged } from "../components/AppBottomNav";
+import { stripLeadingStepNumber } from "../utils/recipeSteps";
 
 const RecipeBookPage = () => {
   const toast = useToast();
@@ -128,7 +129,7 @@ const RecipeBookPage = () => {
                   <div className="complete-section-label">순서</div>
                   <ol>
                     {(openBookRecipe.steps || []).map((s, i) => (
-                      <li key={i}>{s}</li>
+                      <li key={i}>{stripLeadingStepNumber(s)}</li>
                     ))}
                   </ol>
                 </div>
