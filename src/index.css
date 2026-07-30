@@ -1,5 +1,7 @@
 html {
   background: #f6f8fb;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -12,6 +14,14 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  touch-action: manipulation;
+}
+
+/* iOS WKWebView: font-size < 16px on focus triggers auto-zoom */
+html.cap-native input,
+html.cap-native textarea,
+html.cap-native select {
+  font-size: 16px;
 }
 
 #root {

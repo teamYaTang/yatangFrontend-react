@@ -34,7 +34,6 @@ import { playFlipSfx } from "../utils/sfx";
 const UNIT_OPTIONS = ["개", "팩", "병", "봉지", "캔", "g", "kg", "ml", "L"];
 const LS_FRIDGE_SORT = "yatang_fridge_sort";
 
-/** 셀렉트 박스 너비는 더 이상 글자 수 측정으로 고정하지 않음 (긴 이름 + 화살표 잘림 방지) */
 const asArray = (value) => (Array.isArray(value) ? value : []);
 
 const Refrigerator = () => {
@@ -478,26 +477,34 @@ const Refrigerator = () => {
               <div className="fridge-picker">
                 <span className="fridge-picker-label">냉장고 선택</span>
                 <div className="fridge-header-title-row">
-                  <select
-                    className="fridge-select-dropdown"
-                    value={mainFridge?.id || ""}
-                    onChange={handleFridgeSelectChange}
-                    aria-label="냉장고 선택"
-                  >
-                    {sortedFridges.map((f) => (
-                      <option key={f.id} value={f.id}>
-                        {f.name}
-                      </option>
-                    ))}
-                    {isLoggedIn() && (
-                      <>
-                        <option disabled value="__sep__">
-                          ───────────
+                  <div className="fridge-select-control">
+                    <span className="fridge-select-face" aria-hidden="true">
+                      <span className="fridge-select-chevron" />
+                      <span className="fridge-select-name">
+                        {(mainFridge?.name || "").trim() || "냉장고"}
+                      </span>
+                    </span>
+                    <select
+                      className="fridge-select-dropdown"
+                      value={mainFridge?.id || ""}
+                      onChange={handleFridgeSelectChange}
+                      aria-label="냉장고 선택"
+                    >
+                      {sortedFridges.map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {f.name}
                         </option>
-                        <option value="__manage__">냉장고 관리하기</option>
-                      </>
-                    )}
-                  </select>
+                      ))}
+                      {isLoggedIn() && (
+                        <>
+                          <option disabled value="__sep__">
+                            ───────────
+                          </option>
+                          <option value="__manage__">냉장고 관리하기</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
                   {mainFridge?.isMain === true && (
                     <span className="badge-main" title="메인 냉장고">
                       main
