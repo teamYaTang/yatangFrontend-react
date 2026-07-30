@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { FiPackage, FiLayers, FiPlusCircle, FiRepeat, FiSettings, FiBox, FiX } from "react-icons/fi";
 import { createPortal } from "react-dom";
@@ -34,11 +34,7 @@ import { playFlipSfx } from "../utils/sfx";
 const UNIT_OPTIONS = ["개", "팩", "병", "봉지", "캔", "g", "kg", "ml", "L"];
 const LS_FRIDGE_SORT = "yatang_fridge_sort";
 
-/** 셀렉트 박스 너비 기준: 이름이 이 글자 수를 넘으면 잘린 너비로 측정 */
-const FRIDGE_SELECT_NAME_MAX_CHARS = 14;
-/** 텍스트 오른쪽: 커스텀 화살표(12px) + 최소 간격 — 브라우저 기본 화살표 여백보다 좁게 */
-const FRIDGE_SELECT_ARROW_PAD_PX = 14;
-const FRIDGE_SELECT_MIN_WIDTH_PX = 64;
+/** 셀렉트 박스 너비는 더 이상 글자 수 측정으로 고정하지 않음 (긴 이름 + 화살표 잘림 방지) */
 const asArray = (value) => (Array.isArray(value) ? value : []);
 
 const Refrigerator = () => {
@@ -64,24 +60,6 @@ const Refrigerator = () => {
   const [ingredientImageMap, setIngredientImageMap] = useState({});
   /** 재료명(소문자) → 시스템 카탈로그 아이콘 파일명(영문) */
   const [systemIconFileByNameLower, setSystemIconFileByNameLower] = useState({});
-
-  const fridgeSelectMeasureRef = useRef(null);
-  const [fridgeSelectWidthPx, setFridgeSelectWidthPx] = useState(null);
-
-  useLayoutEffect(() => {
-    const span = fridgeSelectMeasureRef.current;
-    if (!span || !mainFridge) {
-      setFridgeSelectWidthPx(null);
-      return;
-    }
-    const raw = (mainFridge.name || "").trim() || "냉장고";
-    const capped =
-      raw.length > FRIDGE_SELECT_NAME_MAX_CHARS ? raw.slice(0, FRIDGE_SELECT_NAME_MAX_CHARS) : raw;
-    span.textContent = capped;
-    const textW = span.offsetWidth;
-    const w = Math.max(FRIDGE_SELECT_MIN_WIDTH_PX, textW + FRIDGE_SELECT_ARROW_PAD_PX);
-    setFridgeSelectWidthPx(w);
-  }, [mainFridge]);
 
   useEffect(() => {
     localStorage.setItem(LS_FRIDGE_SORT, sortKey);
@@ -496,23 +474,21 @@ const Refrigerator = () => {
       <header className="fridge-header">
         <div className="fridge-header-top-row">
           <div className="fridge-header-content">
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              {fridges.length > 1 ? (
+            {fridges.length > 1 ? (
+              <div className="fridge-picker">
+                <span className="fridge-picker-label">냉장고 선택</span>
                 <div className="fridge-header-title-row">
-                  <span ref={fridgeSelectMeasureRef} className="fridge-select-measure" aria-hidden />
                   <select
                     className="fridge-select-dropdown"
                     value={mainFridge?.id || ""}
                     onChange={handleFridgeSelectChange}
-                    style={
-                      fridgeSelectWidthPx != null ? { width: fridgeSelectWidthPx, maxWidth: "100%" } : undefined
-                    }
+                    aria-label="냉장고 선택"
                   >
                     {sortedFridges.map((f) => (
-                        <option key={f.id} value={f.id}>
-                          {f.name}
-                        </option>
-                      ))}
+                      <option key={f.id} value={f.id}>
+                        {f.name}
+                      </option>
+                    ))}
                     {isLoggedIn() && (
                       <>
                         <option disabled value="__sep__">
@@ -528,26 +504,26 @@ const Refrigerator = () => {
                     </span>
                   )}
                 </div>
-              ) : (
-                <h1 className="fridge-title">
-                  <span>{mainFridge?.name || `${userNickname}의 냉장고`}</span>
-                  {mainFridge?.isMain === true && (
-                    <span className="badge-main" title="메인 냉장고">
-                      main
-                    </span>
-                  )}
-                  {isLoggedIn() && (
-                    <button
-                      type="button"
-                      className="fridge-inline-manage"
-                      onClick={() => navigate("/settings", { state: { settingsTab: "fridge" } })}
-                    >
-                      냉장고 관리하기
-                    </button>
-                  )}
-                </h1>
-              )}
-            </div>
+              </div>
+            ) : (
+              <h1 className="fridge-title">
+                <span>{mainFridge?.name || `${userNickname}의 냉장고`}</span>
+                {mainFridge?.isMain === true && (
+                  <span className="badge-main" title="메인 냉장고">
+                    main
+                  </span>
+                )}
+                {isLoggedIn() && (
+                  <button
+                    type="button"
+                    className="fridge-inline-manage"
+                    onClick={() => navigate("/settings", { state: { settingsTab: "fridge" } })}
+                  >
+                    냉장고 관리하기
+                  </button>
+                )}
+              </h1>
+            )}
           </div>
           <div className="fridge-header-actions" style={{ display: "flex", gap: "8px" }}>
             <button className="fridge-logout-button" onClick={() => navigate("/settings")} title="설정">

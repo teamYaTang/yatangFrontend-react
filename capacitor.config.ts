@@ -7,6 +7,8 @@ import type { CapacitorConfig } from '@capacitor/cli';
  *
  * allowNavigation: Google/Kakao OAuth가 외부 Chrome으로 새지 않고 WebView 안에서
  * 끝나야 앱 localStorage에 토큰이 저장됩니다.
+ *
+ * 운영은 HTTPS(https://jibbabbuja.duckdns.org) 권장. HTTP면 cleartext: true 가 됩니다.
  */
 const REMOTE_APP_URL = process.env.CAPACITOR_SERVER_URL?.trim();
 

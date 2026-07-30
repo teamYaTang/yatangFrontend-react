@@ -10,9 +10,8 @@ export const uploadIngredientImageApi = async (ingredientName, file) => {
   const form = new FormData();
   form.append("ingredientName", ingredientName);
   form.append("file", file);
-  await apiClient.post("/ingredient-images", form, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  // Content-Type 을 수동 지정하면 boundary 가 빠져 Spring multipart 파싱이 실패합니다.
+  await apiClient.post("/ingredient-images", form);
 };
 
 export const deleteIngredientImageApi = async (ingredientName) => {

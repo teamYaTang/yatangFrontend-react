@@ -6,10 +6,12 @@
   --fridge-item-icon-radius: 14px;
 
   min-height: 100vh;
+  min-height: 100dvh;
   background: #f6f8fb;
-  padding: 32px 24px 24px;
+  padding: calc(20px + env(safe-area-inset-top, 0px)) 24px 24px;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
   /*gap: 15px;*/
 }
 
@@ -155,9 +157,31 @@
   width: 100%;
 }
 
+.fridge-header-actions {
+  flex-shrink: 0;
+}
+
 .fridge-header-content {
   min-width: 0;
   flex: 1 1 auto;
+}
+
+.fridge-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.fridge-picker-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #64748b;
+  line-height: 1.2;
 }
 
 .fridge-header-title-row {
@@ -168,16 +192,16 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-  max-width: 50%;
+  width: 100%;
+  max-width: 100%;
 }
 
 .fridge-header-title-row .fridge-select-dropdown {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   min-width: 0;
   max-width: 100%;
+  width: 100%;
   box-sizing: border-box;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .fridge-select-measure {
@@ -267,13 +291,23 @@
   font-size: 1.5rem;
   font-weight: 700;
   color: #1f2d3d;
-  background: transparent;
+  background-color: transparent;
   border: none;
   cursor: pointer;
-  padding: 0;
+  padding: 0 1.35em 0 0;
   margin: 0;
   font-family: inherit;
   outline: none;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23475569' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0 center;
+  background-size: 12px 8px;
 }
 
 .fridge-select-dropdown:hover {
@@ -493,6 +527,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   width: 100%;
+  max-width: 100%;
+  display: block;
 }
 
 .fridge-empty-content {

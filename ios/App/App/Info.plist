@@ -58,19 +58,5 @@
 			</array>
 		</dict>
 	</array>
-	<!-- HTTP DuckDNS (출시 전 HTTPS로 바꾸면 이 블록 제거 권장) -->
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSExceptionDomains</key>
-		<dict>
-			<key>jibbabbuja.duckdns.org</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-			</dict>
-		</dict>
-	</dict>
 </dict>
 </plist>

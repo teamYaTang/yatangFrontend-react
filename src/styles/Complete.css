@@ -1,6 +1,7 @@
 .complete-page {
   min-height: 100vh;
-  padding: 24px 20px 20px;
+  min-height: 100dvh;
+  padding: calc(20px + env(safe-area-inset-top, 0px)) 20px 20px;
   background: #f5f7fb;
   max-width: 720px;
   margin: 0 auto;

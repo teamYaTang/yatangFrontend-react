@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useLayoutEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../styles/Ingredient.css";
@@ -116,6 +116,9 @@ const Ingredient = () => {
   const [, setGuestImageTick] = useState(0);
   /** 전체 탭: false면 선택된 냉장고의 냉장·냉동 + 상온만 */
   const [showAllFridgesInAllTab, setShowAllFridgesInAllTab] = useState(false);
+
+  const catalogListRef = useRef(null);
+  const pendingScrollCatalogNameRef = useRef(null);
 
   /** 재료명(소문자) → 시스템 카탈로그 아이콘 파일명 */
   const [systemIconFileByNameLower, setSystemIconFileByNameLower] = useState({});
@@ -789,10 +792,12 @@ const Ingredient = () => {
     });
   };
 
-  const refreshCatalog = useCallback(async () => {
+  const refreshCatalog = useCallback(async (overrides = {}) => {
+    const q = overrides.q !== undefined ? overrides.q : catalogSearch;
+    const category = overrides.category !== undefined ? overrides.category : catalogCategory;
     setCatalogLoading(true);
     try {
-      const server = await getIngredientCatalogApi(catalogSearch, catalogCategory);
+      const server = await getIngredientCatalogApi(q, category);
       const extras = getGuestCatalogExtras().map((x, i) => ({
         id: `guest-extra-${i}-${x.name}`,
         name: x.name,
@@ -876,12 +881,37 @@ const Ingredient = () => {
           window.dispatchEvent(new Event("yatang-guest-images-changed"));
           toast("이 기기에 재료 사진을 저장했습니다.");
         };
+        reader.onerror = () => toast("사진을 읽지 못했습니다.");
         reader.readAsDataURL(file);
       }
     } catch (e) {
-      toast(e.message || "업로드에 실패했습니다.");
+      toast(e.response?.data?.message || e.message || "업로드에 실패했습니다.");
     }
   };
+
+  const scrollCatalogListToName = useCallback((name) => {
+    const list = catalogListRef.current;
+    if (!list || !name) return;
+    const key = name.trim().toLowerCase();
+    const el = list.querySelector(`[data-catalog-name="${CSS.escape(key)}"]`);
+    if (el) {
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+  }, []);
+
+  const queueScrollToCatalogName = useCallback((name) => {
+    pendingScrollCatalogNameRef.current = (name || "").trim();
+  }, []);
+
+  useEffect(() => {
+    const pending = pendingScrollCatalogNameRef.current;
+    if (!pending || catalogLoading || !catalogOpen) return;
+    const t = window.setTimeout(() => {
+      scrollCatalogListToName(pending);
+      pendingScrollCatalogNameRef.current = null;
+    }, 60);
+    return () => window.clearTimeout(t);
+  }, [catalogRows, catalogLoading, catalogCategory, catalogOpen, scrollCatalogListToName]);
 
   const handleAddCustomCatalogName = async () => {
     const name = customCatalogName.trim();
@@ -901,7 +931,10 @@ const Ingredient = () => {
       const sk = catalogStableKey(name, "개");
       setCatalogSelected((prev) => new Set(prev).add(sk));
       setCustomCatalogName("");
-      await refreshCatalog();
+      setCatalogSearch("");
+      setCatalogCategory("직접 추가");
+      queueScrollToCatalogName(name);
+      await refreshCatalog({ q: "", category: "직접 추가" });
     } catch (e) {
       toast(e.message || "추가에 실패했습니다.");
     }
@@ -942,7 +975,10 @@ const Ingredient = () => {
         addGuestCatalogExtra(name, "개");
       }
       setCatalogSelected((prev) => new Set(prev).add(catalogStableKey(name, "개")));
-      await refreshCatalog();
+      setCatalogSearch("");
+      setCatalogCategory("직접 추가");
+      queueScrollToCatalogName(name);
+      await refreshCatalog({ q: "", category: "직접 추가" });
     } catch (e) {
       toast(e.message || "추가에 실패했습니다.");
     }
@@ -1604,7 +1640,7 @@ const Ingredient = () => {
                   : `「${catalogSearch.trim()}」을(를) 내 목록에 넣고 선택`}
               </button>
             )}
-            <div className="ingredient-catalog-list">
+            <div className="ingredient-catalog-list" ref={catalogListRef}>
               {catalogLoading ? (
                 <div className="ingredient-catalog-loading">불러오는 중…</div>
               ) : visibleCatalogRows.length === 0 ? (
@@ -1623,37 +1659,32 @@ const Ingredient = () => {
                   const catLabel = row.custom ? "직접 추가" : row.category || "기타";
                   const rowKey = row.id != null ? String(row.id) : sk;
                   const ownedHere = ownedIngredientNameLowerSet.has((row.name || "").trim().toLowerCase());
+                  const nameLower = (row.name || "").trim().toLowerCase();
+                  const customImageUrl = row.custom
+                    ? userIngredientImageMap[nameLower] ||
+                      row.userImageUrl ||
+                      guestIngredientImageMap[nameLower]
+                    : undefined;
                   return (
-                    <div key={rowKey} className="ingredient-catalog-row">
+                    <div
+                      key={rowKey}
+                      className="ingredient-catalog-row"
+                      data-catalog-name={nameLower}
+                    >
                       <div className="ingredient-catalog-glyph-wrap" aria-hidden>
                         <CatalogIngredientGlyph
                           name={row.name}
                           category={row.category}
                           custom={row.custom}
                           iconImageFile={row.custom ? undefined : row.iconImageFile}
-                          userImageUrl={
-                            row.custom
-                              ? row.userImageUrl ||
-                                guestIngredientImageMap[row.name.trim().toLowerCase()]
-                              : undefined
-                          }
+                          userImageUrl={customImageUrl}
                         />
                       </div>
                       {row.custom && (
-                        <button
-                          type="button"
-                          className="ingredient-catalog-photo-chip"
-                          title="이 재료 사진 등록 (직접 추가한 재료만)"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            const input = e.currentTarget.querySelector("input[type=file]");
-                            input?.click();
-                          }}
-                        >
+                        <label className="ingredient-catalog-photo-chip" title="이 재료 사진 등록 (직접 추가한 재료만)">
                           <input
                             type="file"
                             accept="image/jpeg,image/png,image/webp,image/gif"
-                            tabIndex={-1}
                             onChange={(e) => {
                               const f = e.target.files?.[0];
                               e.target.value = "";
@@ -1661,7 +1692,7 @@ const Ingredient = () => {
                             }}
                           />
                           사진
-                        </button>
+                        </label>
                       )}
                       <label className="ingredient-catalog-row-label">
                         <input
@@ -1670,7 +1701,9 @@ const Ingredient = () => {
                           onChange={() => toggleCatalogSelect(row)}
                         />
                         <span className="ingredient-catalog-cat">{catLabel}</span>
-                        <span className="ingredient-catalog-name">{row.name}</span>
+                        <span className="ingredient-catalog-name" title={row.name}>
+                          {row.name}
+                        </span>
                         <span className="ingredient-catalog-unit">({row.defaultUnit || "개"})</span>
                         {ownedHere && (
                           <span
