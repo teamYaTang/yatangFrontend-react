@@ -26,7 +26,11 @@ import {
   postCustomIngredientCatalogApi,
   deleteCustomIngredientCatalogApi,
 } from "../api/ingredientCatalog";
-import { getIngredientImageMapApi } from "../api/ingredientImages";
+import {
+  getIngredientImageMapApi,
+  uploadIngredientImageApi,
+  deleteIngredientImageApi,
+} from "../api/ingredientImages";
 import { getUserProfile } from "../api/auth";
 import { ensureAccessToken, clearAuthTokens } from "../api/apiClient";
 import { getUserIdFromToken, isLoggedIn } from "../utils/jwt";
@@ -36,12 +40,13 @@ import { ITEM_SORT_OPTIONS, sortItems, normalizeSortKey } from "../utils/itemSor
 import { formatRegisteredAt } from "../utils/ddayLabel";
 import { INGREDIENT_CATALOG_CATEGORIES } from "../constants/ingredientCatalogCategories";
 import { CatalogIngredientGlyph } from "../constants/ingredientCatalogVisuals";
-import { uploadIngredientImageApi } from "../api/ingredientImages";
 import {
   getGuestIngredientImageMap,
   getGuestIngredientImageMapForCustomCatalogOnly,
   setGuestIngredientImage,
+  removeGuestIngredientImage,
 } from "../utils/guestIngredientImages";
+import { compressImageForUpload } from "../utils/compressImage";
 
 const UNIT_PRESETS = ["개", "팩", "병", "봉지", "캔", "g", "kg", "ml", "L"];
 
@@ -116,6 +121,10 @@ const Ingredient = () => {
   const [, setGuestImageTick] = useState(0);
   /** 전체 탭: false면 선택된 냉장고의 냉장·냉동 + 상온만 */
   const [showAllFridgesInAllTab, setShowAllFridgesInAllTab] = useState(false);
+  /** 직접 추가 재료 아이콘 탭 → 사진 변경/삭제 메뉴 (rowKey) */
+  const [catalogPhotoMenuKey, setCatalogPhotoMenuKey] = useState(null);
+  const catalogPhotoFileInputRef = useRef(null);
+  const catalogPhotoTargetRowRef = useRef(null);
 
   const catalogListRef = useRef(null);
   const pendingScrollCatalogNameRef = useRef(null);
@@ -866,11 +875,13 @@ const Ingredient = () => {
     }
     const name = row.name.trim();
     try {
+      const compressed = await compressImageForUpload(file);
       if (isLoggedIn()) {
         const uid = getUserIdFromToken();
         if (!uid) throw new Error("로그인이 필요합니다.");
-        await uploadIngredientImageApi(name, file);
-        await refreshCatalog();
+        await uploadIngredientImageApi(name, compressed);
+        const map = await getIngredientImageMapApi();
+        setUserIngredientImageMap(map && typeof map === "object" ? map : {});
         window.dispatchEvent(new Event("yatang-ingredient-images-changed"));
         toast("재료 사진을 등록했습니다.");
       } else {
@@ -882,11 +893,52 @@ const Ingredient = () => {
           toast("이 기기에 재료 사진을 저장했습니다.");
         };
         reader.onerror = () => toast("사진을 읽지 못했습니다.");
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(compressed);
       }
     } catch (e) {
       toast(e.response?.data?.message || e.message || "업로드에 실패했습니다.");
+    } finally {
+      setCatalogPhotoMenuKey(null);
     }
+  };
+
+  const handleCatalogImageDelete = async (row) => {
+    if (!row?.custom || !row?.name) return;
+    const name = row.name.trim();
+    try {
+      if (isLoggedIn()) {
+        await deleteIngredientImageApi(name);
+        const map = await getIngredientImageMapApi();
+        setUserIngredientImageMap(map && typeof map === "object" ? map : {});
+        window.dispatchEvent(new Event("yatang-ingredient-images-changed"));
+        toast("재료 사진을 삭제했습니다.");
+      } else {
+        removeGuestIngredientImage(name);
+        setGuestImageTick((t) => t + 1);
+        window.dispatchEvent(new Event("yatang-guest-images-changed"));
+        toast("재료 사진을 삭제했습니다.");
+      }
+    } catch (e) {
+      toast(e.response?.data?.message || e.message || "사진 삭제에 실패했습니다.");
+    } finally {
+      setCatalogPhotoMenuKey(null);
+    }
+  };
+
+  const openCatalogPhotoPicker = (row) => {
+    catalogPhotoTargetRowRef.current = row;
+    setCatalogPhotoMenuKey(null);
+    const input = catalogPhotoFileInputRef.current;
+    if (input) {
+      input.value = "";
+      input.click();
+    }
+  };
+
+  const handleCatalogGlyphPhotoClick = (row, rowKey, hasImage) => {
+    if (!row?.custom) return;
+    // 사진 유무와 관계없이 메뉴를 열어 추가/변경/삭제 가능하게
+    setCatalogPhotoMenuKey((prev) => (prev === rowKey ? null : rowKey));
   };
 
   const scrollCatalogListToName = useCallback((name) => {
@@ -1000,6 +1052,7 @@ const Ingredient = () => {
           await createPantryItemApi(payload);
         }
         setCatalogSelected(new Set());
+        setCatalogPhotoMenuKey(null);
         setCatalogOpen(false);
         await loadPantry();
         await loadAllItems();
@@ -1030,6 +1083,7 @@ const Ingredient = () => {
         }
       }
       setCatalogSelected(new Set());
+      setCatalogPhotoMenuKey(null);
       setCatalogOpen(false);
       if (String(targetFid) === String(fridgeId)) {
         await loadItems(targetFid);
@@ -1541,11 +1595,29 @@ const Ingredient = () => {
                 type="button"
                 className="ingredient-modal-close-x"
                 aria-label="닫기"
-                onClick={() => setCatalogOpen(false)}
+                onClick={() => {
+                  setCatalogPhotoMenuKey(null);
+                  setCatalogOpen(false);
+                }}
               >
                 <FiX size={20} />
               </button>
             </div>
+            <input
+              ref={catalogPhotoFileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="ingredient-catalog-photo-file-input"
+              aria-hidden
+              tabIndex={-1}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                const row = catalogPhotoTargetRowRef.current;
+                catalogPhotoTargetRowRef.current = null;
+                if (f && row) handleCatalogImageUpload(row, f);
+              }}
+            />
             <p className="ingredient-catalog-hint">
               보관 위치는 <strong>냉장실</strong>이 기본입니다. 냉장·냉동·상온을 고른 뒤 목록에서 선택하세요. 상온보관은
               냉장고와 무관한 한 곳에 모입니다.
@@ -1640,7 +1712,11 @@ const Ingredient = () => {
                   : `「${catalogSearch.trim()}」을(를) 내 목록에 넣고 선택`}
               </button>
             )}
-            <div className="ingredient-catalog-list" ref={catalogListRef}>
+            <div
+              className="ingredient-catalog-list"
+              ref={catalogListRef}
+              onClick={() => setCatalogPhotoMenuKey(null)}
+            >
               {catalogLoading ? (
                 <div className="ingredient-catalog-loading">불러오는 중…</div>
               ) : visibleCatalogRows.length === 0 ? (
@@ -1671,28 +1747,72 @@ const Ingredient = () => {
                       className="ingredient-catalog-row"
                       data-catalog-name={nameLower}
                     >
-                      <div className="ingredient-catalog-glyph-wrap" aria-hidden>
-                        <CatalogIngredientGlyph
-                          name={row.name}
-                          category={row.category}
-                          custom={row.custom}
-                          iconImageFile={row.custom ? undefined : row.iconImageFile}
-                          userImageUrl={customImageUrl}
-                        />
-                      </div>
-                      {row.custom && (
-                        <label className="ingredient-catalog-photo-chip" title="이 재료 사진 등록 (직접 추가한 재료만)">
-                          <input
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp,image/gif"
-                            onChange={(e) => {
-                              const f = e.target.files?.[0];
-                              e.target.value = "";
-                              if (f) handleCatalogImageUpload(row, f);
+                      {row.custom ? (
+                        <div
+                          className={`ingredient-catalog-glyph-wrap ingredient-catalog-glyph-wrap--editable${
+                            customImageUrl ? " ingredient-catalog-glyph-wrap--photo" : ""
+                          }`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            type="button"
+                            className="ingredient-catalog-glyph-btn"
+                            title={customImageUrl ? "사진 변경·삭제" : "사진 추가"}
+                            aria-label={customImageUrl ? "재료 사진 변경 또는 삭제" : "재료 사진 추가"}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleCatalogGlyphPhotoClick(row, rowKey, !!customImageUrl);
                             }}
+                          >
+                            <CatalogIngredientGlyph
+                              name={row.name}
+                              category={row.category}
+                              custom={row.custom}
+                              iconImageFile={undefined}
+                              userImageUrl={customImageUrl}
+                            />
+                          </button>
+                          {catalogPhotoMenuKey === rowKey && (
+                            <div className="ingredient-catalog-photo-menu" role="menu">
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  openCatalogPhotoPicker(row);
+                                }}
+                              >
+                                {customImageUrl ? "사진 변경" : "사진 추가"}
+                              </button>
+                              {customImageUrl && (
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  className="danger"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleCatalogImageDelete(row);
+                                  }}
+                                >
+                                  사진 삭제
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="ingredient-catalog-glyph-wrap" aria-hidden>
+                          <CatalogIngredientGlyph
+                            name={row.name}
+                            category={row.category}
+                            custom={row.custom}
+                            iconImageFile={row.iconImageFile}
+                            userImageUrl={undefined}
                           />
-                          사진
-                        </label>
+                        </div>
                       )}
                       <label className="ingredient-catalog-row-label">
                         <input
@@ -1705,15 +1825,19 @@ const Ingredient = () => {
                           {row.name}
                         </span>
                         <span className="ingredient-catalog-unit">({row.defaultUnit || "개"})</span>
-                        {ownedHere && (
-                          <span
-                            className="ingredient-catalog-owned-badge"
-                            title="이미 재고에 있습니다. 그래도 추가할 수 있습니다."
-                          >
-                            보유 중
+                        {(ownedHere || row.custom) && (
+                          <span className="ingredient-catalog-badges">
+                            {ownedHere && (
+                              <span
+                                className="ingredient-catalog-owned-badge"
+                                title="이미 재고에 있습니다. 그래도 추가할 수 있습니다."
+                              >
+                                보유 중
+                              </span>
+                            )}
+                            {row.custom && <span className="ingredient-catalog-custom">내 목록</span>}
                           </span>
                         )}
-                        {row.custom && <span className="ingredient-catalog-custom">내 목록</span>}
                       </label>
                       {row.custom && (
                         <button
@@ -1757,7 +1881,10 @@ const Ingredient = () => {
             </div>
             <div className="ingredient-catalog-modal-actions">
               <span className="ingredient-catalog-selected-count">선택 {catalogSelected.size}개</span>
-              <button type="button" className="ingredient-modal-button" onClick={() => setCatalogOpen(false)}>
+              <button type="button" className="ingredient-modal-button" onClick={() => {
+                setCatalogPhotoMenuKey(null);
+                setCatalogOpen(false);
+              }}>
                 닫기
               </button>
               <button

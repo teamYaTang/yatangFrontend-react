@@ -146,6 +146,32 @@
   border-color: #cbd5e1;
 }
 
+.signin-legal-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 16px 0 0;
+  width: 100%;
+}
+
+.signin-legal-sep {
+  color: #cbd5e1;
+  font-size: 0.85rem;
+}
+
+.signin-legal-link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .signin-modal-overlay {
   position: fixed;
   inset: 0;

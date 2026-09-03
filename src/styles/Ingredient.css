@@ -773,6 +773,92 @@
   justify-content: center;
   border-radius: 10px;
   background: #eef2ff;
+  position: relative;
+}
+
+.ingredient-catalog-glyph-wrap--editable {
+  background: #e8eefc;
+}
+
+.ingredient-catalog-glyph-wrap--photo {
+  padding: 0;
+  overflow: visible;
+  background: #e2e8f0;
+}
+
+.ingredient-catalog-glyph-wrap--photo .ingredient-catalog-glyph-btn {
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.ingredient-catalog-glyph-wrap--photo .ingredient-catalog-glyph-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+  display: block;
+}
+
+.ingredient-catalog-glyph-btn {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.ingredient-catalog-glyph-btn:active {
+  opacity: 0.85;
+}
+
+.ingredient-catalog-photo-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  pointer-events: none;
+}
+
+.ingredient-catalog-photo-menu {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 6px);
+  z-index: 40;
+  min-width: 96px;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+  overflow: hidden;
+}
+
+.ingredient-catalog-photo-menu button {
+  border: none;
+  background: #fff;
+  padding: 8px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #334155;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ingredient-catalog-photo-menu button:hover {
+  background: #f8fafc;
+}
+
+.ingredient-catalog-photo-menu button.danger {
+  color: #dc2626;
 }
 
 .ingredient-catalog-glyph-icon {
@@ -792,36 +878,17 @@
   gap: 8px;
   padding: 8px 10px;
   border-radius: 8px;
+  overflow: visible;
+  position: relative;
+  z-index: 0;
+}
+
+.ingredient-catalog-row:has(.ingredient-catalog-photo-menu) {
+  z-index: 2;
 }
 
 .ingredient-catalog-row:hover {
   background: #fff;
-}
-
-.ingredient-catalog-photo-chip {
-  flex-shrink: 0;
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
-  border-radius: 8px;
-  padding: 4px 8px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: #64748b;
-  cursor: pointer;
-}
-
-.ingredient-catalog-photo-chip input[type="file"] {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
-  font-size: 0;
 }
 
 .ingredient-catalog-row-label {
@@ -876,24 +943,38 @@
   flex-shrink: 0;
 }
 
-.ingredient-catalog-owned-badge {
+.ingredient-catalog-badges {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
   flex-shrink: 0;
-  font-size: 0.72rem;
+  margin-left: auto;
+}
+
+.ingredient-catalog-owned-badge,
+.ingredient-catalog-custom {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  white-space: nowrap;
+  writing-mode: horizontal-tb;
+  font-size: 0.62rem;
   font-weight: 700;
-  color: #0f766e;
-  background: #ccfbf1;
-  padding: 2px 8px;
+  line-height: 1.2;
+  padding: 2px 6px;
   border-radius: 999px;
 }
 
+.ingredient-catalog-owned-badge {
+  color: #0f766e;
+  background: #ccfbf1;
+}
+
 .ingredient-catalog-custom {
-  margin-left: auto;
-  font-size: 0.72rem;
-  font-weight: 700;
   color: #4c6ef5;
   background: #eef2ff;
-  padding: 2px 8px;
-  border-radius: 999px;
 }
 
 .ingredient-catalog-custom-block {

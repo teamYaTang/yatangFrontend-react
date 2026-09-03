@@ -186,6 +186,18 @@ const SignIn = () => {
         <button type="button" className="signin-continue-guest" onClick={handleContinueAsGuest}>
           계속 비회원으로 이용하기
         </button>
+
+        <p className="signin-legal-links">
+          <button type="button" className="signin-legal-link" onClick={() => navigate("/privacy")}>
+            개인정보 처리방침
+          </button>
+          <span className="signin-legal-sep" aria-hidden>
+            ·
+          </span>
+          <button type="button" className="signin-legal-link" onClick={() => navigate("/terms")}>
+            이용약관
+          </button>
+        </p>
       </div>
 
       <GuestImportPromptModal

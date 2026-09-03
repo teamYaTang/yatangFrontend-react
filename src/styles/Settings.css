@@ -123,6 +123,31 @@
   padding: 0;
 }
 
+.settings-legal-links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-legal-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: #334155;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.settings-legal-link:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
 .settings-button--danger {
   background: #fff;
   color: #dc2626;

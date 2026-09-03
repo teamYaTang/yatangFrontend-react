@@ -189,6 +189,18 @@ const SignUp = () => {
             로그인
           </button>
         </p>
+
+        <p className="signup-legal-links">
+          <button type="button" className="signup-legal-link" onClick={() => navigate("/privacy")}>
+            개인정보 처리방침
+          </button>
+          <span className="signup-legal-sep" aria-hidden>
+            ·
+          </span>
+          <button type="button" className="signup-legal-link" onClick={() => navigate("/terms")}>
+            이용약관
+          </button>
+        </p>
       </div>
     </div>
   );

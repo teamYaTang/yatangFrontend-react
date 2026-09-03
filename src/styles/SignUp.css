@@ -151,3 +151,29 @@
   font-weight: 600;
   cursor: pointer;
 }
+
+.signup-legal-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 18px 0 0;
+  width: 100%;
+}
+
+.signup-legal-sep {
+  color: #cbd5e1;
+  font-size: 0.85rem;
+}
+
+.signup-legal-link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}

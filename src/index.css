@@ -4,6 +4,11 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* 앱 전용: rem 기준을 약간 줄여 전체 UI를 컴팩트하게 (줌은 네이티브에서 고정) */
+html.cap-native {
+  font-size: 14px;
+}
+
 body {
   margin: 0;
   padding-left: env(safe-area-inset-left, 0px);
@@ -15,13 +20,6 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   touch-action: manipulation;
-}
-
-/* iOS WKWebView: font-size < 16px on focus triggers auto-zoom */
-html.cap-native input,
-html.cap-native textarea,
-html.cap-native select {
-  font-size: 16px;
 }
 
 #root {

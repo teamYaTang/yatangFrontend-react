@@ -464,6 +464,26 @@ const Settings = () => {
                         </button>
                     </div>
 
+                    <div className="settings-card">
+                        <div className="settings-card-title">약관 및 정책</div>
+                        <div className="settings-legal-links">
+                            <button
+                                type="button"
+                                className="settings-legal-link"
+                                onClick={() => navigate("/privacy")}
+                            >
+                                개인정보 처리방침
+                            </button>
+                            <button
+                                type="button"
+                                className="settings-legal-link"
+                                onClick={() => navigate("/terms")}
+                            >
+                                이용약관
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="settings-card settings-card--danger">
                         <button
                             type="button"
