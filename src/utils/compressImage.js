@@ -4,7 +4,13 @@
  */
 export function compressImageForUpload(file, { maxEdge = 1024, quality = 0.82 } = {}) {
   return new Promise((resolve, reject) => {
-    if (!file || !file.type?.startsWith("image/")) {
+    if (!file) {
+      reject(new Error("이미지 파일만 업로드할 수 있습니다."));
+      return;
+    }
+    // iOS 카메라/앨범에서 type 이 비어 있거나 HEIC 인 경우가 있음
+    const type = (file.type || "").toLowerCase();
+    if (type && !type.startsWith("image/") && type !== "application/octet-stream") {
       reject(new Error("이미지 파일만 업로드할 수 있습니다."));
       return;
     }

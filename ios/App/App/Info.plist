@@ -47,6 +47,12 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>직접 추가한 재료의 사진을 등록·변경하기 위해 사진 라이브러리에 접근합니다.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>재료 사진을 저장하기 위해 사진 라이브러리에 접근합니다.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>직접 추가한 재료의 사진을 촬영해 등록하기 위해 카메라에 접근합니다.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

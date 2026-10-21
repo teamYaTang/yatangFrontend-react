@@ -47,6 +47,7 @@ import {
   removeGuestIngredientImage,
 } from "../utils/guestIngredientImages";
 import { compressImageForUpload } from "../utils/compressImage";
+import { syncExpiryLocalNotifications } from "../utils/expiryLocalNotifications";
 
 const UNIT_PRESETS = ["개", "팩", "병", "봉지", "캔", "g", "kg", "ml", "L"];
 
@@ -291,6 +292,16 @@ const Ingredient = () => {
 
     fetchInitialData();
   }, [navigate, location.state, loadAllItems, loadPantry, toast]);
+
+  useEffect(() => {
+    if (loading) return;
+    syncExpiryLocalNotifications({
+      fridgeItems,
+      freezerItems,
+      pantryItems,
+      nickname: userNickname,
+    }).catch((e) => console.warn("expiry local notifications:", e));
+  }, [loading, fridgeItems, freezerItems, pantryItems, userNickname]);
 
   useEffect(() => {
     if (activeTab === "all") {

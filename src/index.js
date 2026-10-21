@@ -14,7 +14,20 @@ root.render(
   // </React.StrictMode>
 );
 
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+function hideBootSplash() {
+  const splash = document.getElementById("boot-splash");
+  if (!splash) return;
+  splash.classList.add("is-hidden");
+  window.setTimeout(() => splash.remove(), 400);
+}
+
+// 첫 페인트 직후 스플래시 제거 (원격 URL 로드 대기 UI)
+if (document.readyState === "complete") {
+  window.requestAnimationFrame(hideBootSplash);
+} else {
+  window.addEventListener("load", () => window.requestAnimationFrame(hideBootSplash));
+}
+// 네트워크가 느려도 최대 대기 후 제거
+window.setTimeout(hideBootSplash, 4000);
+
 reportWebVitals();

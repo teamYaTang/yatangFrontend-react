@@ -30,6 +30,8 @@ import { getIngredientImageMapApi } from "../api/ingredientImages";
 import { getIngredientCatalogIconMapApi } from "../api/ingredientCatalog";
 import { getGuestIngredientImageMapForCustomCatalogOnly } from "../utils/guestIngredientImages";
 import { playFlipSfx } from "../utils/sfx";
+import { syncExpiryLocalNotifications } from "../utils/expiryLocalNotifications";
+import Loading from "./Loading";
 
 const UNIT_OPTIONS = ["개", "팩", "병", "봉지", "캔", "g", "kg", "ml", "L"];
 const LS_FRIDGE_SORT = "yatang_fridge_sort";
@@ -48,6 +50,7 @@ const Refrigerator = () => {
   const [loading, setLoading] = useState(true);
 
   const [isFlipped, setIsFlipped] = useState(false);
+  const [isFlipSpinning, setIsFlipSpinning] = useState(false);
 
   const [detailItem, setDetailItem] = useState(null);
   const [detailType, setDetailType] = useState(null);
@@ -125,9 +128,17 @@ const Refrigerator = () => {
     [fridges],
   );
 
-  // ───────── 유통기한 알림 (하루 1회) ─────────
+  // ───────── 유통기한 로컬 알림 (D-1·당일 오전 9시) + 앱 내 토스트(하루 1회) ─────────
   useEffect(() => {
     if (loading) return;
+
+    syncExpiryLocalNotifications({
+      fridgeItems,
+      freezerItems,
+      pantryItems,
+      nickname: userNickname,
+    }).catch((e) => console.warn("expiry local notifications:", e));
+
     const all = [...(fridgeItems || []), ...(freezerItems || []), ...(pantryItems || [])];
     if (all.length === 0) return;
 
@@ -151,18 +162,9 @@ const Refrigerator = () => {
         ? "유통기한 임박 재료가 있습니다."
         : `유통기한 임박: ${top.join(", ")}${expiring.length > 3 ? ` 외 ${expiring.length - 3}개` : ""}`;
 
-    // 앱이 열려 있을 때: 토스트는 항상, 브라우저 알림은 권한 있을 때만(자동 요청 X)
     toast(msg);
-    try {
-      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-        new Notification("야탱 유통기한 알림", { body: msg });
-      }
-    } catch {
-      // ignore
-    }
-
     localStorage.setItem(LS_KEY, dayKey);
-  }, [loading, fridgeItems, freezerItems, pantryItems, toast]);
+  }, [loading, fridgeItems, freezerItems, pantryItems, userNickname, toast]);
 
   const refreshItems = async (targetFridgeId) => {
     const [fridgeData, freezerData] = await Promise.all([
@@ -462,7 +464,7 @@ const Refrigerator = () => {
     });
 
   if (loading) {
-    return <div className="fridge-loading">냉장고 불러오는 중...</div>;
+    return <Loading message="냉장고를 불러오는 중…" />;
   }
 
   const modalTitle =
@@ -566,53 +568,66 @@ const Refrigerator = () => {
       </header>
 
       <div className="fridge-flip-container">
-        <div className={`fridge-flip-card ${isFlipped ? "flipped" : ""}`}>
-          <div className="fridge-face front">
-            <div className="fridge-face-header">
-              <div className="fridge-face-title">
-                <FiPackage size={24} color="#4c6ef5" /> 냉장실
-              </div>
-              <button
-                className="fridge-switch-button"
-                onClick={() => {
-                  playFlipSfx();
-                  setIsFlipped(true);
-                }}
-              >
-                <FiRepeat /> 냉동실 보기
-              </button>
-            </div>
-            <div className="fridge-grid-content">
-              {fridgeItems.length === 0 ? (
-                <div className="fridge-empty-text">냉장실이 비어있습니다.</div>
-              ) : (
-                renderGridItems(sortedFridgeItems, "fridge")
-              )}
-            </div>
+        <div
+          className={`fridge-panel ${isFlipped ? "fridge-panel--freezer" : "fridge-panel--fridge"}${
+            isFlipSpinning ? " fridge-panel--spinning" : ""
+          }`}
+        >
+          <div className="fridge-face-header">
+            {isFlipped ? (
+              <>
+                <div className="fridge-face-title">
+                  <FiLayers size={24} color="#06b6d4" /> 냉동실
+                </div>
+                <button
+                  type="button"
+                  className="fridge-switch-button"
+                  disabled={isFlipSpinning}
+                  onClick={() => {
+                    if (isFlipSpinning) return;
+                    playFlipSfx();
+                    setIsFlipSpinning(true);
+                    window.setTimeout(() => setIsFlipped(false), 275);
+                    window.setTimeout(() => setIsFlipSpinning(false), 560);
+                  }}
+                >
+                  <FiRepeat /> 냉장실 보기
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="fridge-face-title">
+                  <FiPackage size={24} color="#4c6ef5" /> 냉장실
+                </div>
+                <button
+                  type="button"
+                  className="fridge-switch-button"
+                  disabled={isFlipSpinning}
+                  onClick={() => {
+                    if (isFlipSpinning) return;
+                    playFlipSfx();
+                    setIsFlipSpinning(true);
+                    window.setTimeout(() => setIsFlipped(true), 275);
+                    window.setTimeout(() => setIsFlipSpinning(false), 560);
+                  }}
+                >
+                  <FiRepeat /> 냉동실 보기
+                </button>
+              </>
+            )}
           </div>
-
-          <div className="fridge-face back">
-            <div className="fridge-face-header">
-              <div className="fridge-face-title">
-                <FiLayers size={24} color="#06b6d4" /> 냉동실
-              </div>
-              <button
-                className="fridge-switch-button"
-                onClick={() => {
-                  playFlipSfx();
-                  setIsFlipped(false);
-                }}
-              >
-                <FiRepeat /> 냉장실 보기
-              </button>
-            </div>
-            <div className="fridge-grid-content">
-              {freezerItems.length === 0 ? (
+          <div className="fridge-grid-content">
+            {isFlipped ? (
+              freezerItems.length === 0 ? (
                 <div className="fridge-empty-text">냉동실이 비어있습니다.</div>
               ) : (
                 renderGridItems(sortedFreezerItems, "freezer")
-              )}
-            </div>
+              )
+            ) : fridgeItems.length === 0 ? (
+              <div className="fridge-empty-text">냉장실이 비어있습니다.</div>
+            ) : (
+              renderGridItems(sortedFridgeItems, "fridge")
+            )}
           </div>
         </div>
       </div>

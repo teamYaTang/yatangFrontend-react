@@ -6,6 +6,7 @@ export async function initNativeApp() {
   if (!Cap?.isNativePlatform?.()) return;
 
   document.documentElement.classList.add("cap-native");
+  disableNativeCallouts();
 
   if (Cap.getPlatform?.() !== "ios") return;
 
@@ -15,4 +16,25 @@ export async function initNativeApp() {
   } catch (e) {
     console.warn("Keyboard plugin unavailable:", e);
   }
+}
+
+/** iOS 롱프레스 텍스트 선택 / 이미지 저장 콜아웃 차단 */
+function disableNativeCallouts() {
+  const allowSelect = (el) =>
+    el?.closest?.("input, textarea, [contenteditable='true']");
+
+  const block = (e) => {
+    if (allowSelect(e.target)) return;
+    e.preventDefault();
+  };
+
+  document.addEventListener("contextmenu", block, { capture: true });
+  document.addEventListener("selectstart", block, { capture: true });
+  document.addEventListener(
+    "dragstart",
+    (e) => {
+      if (e.target?.closest?.("img, svg, a")) e.preventDefault();
+    },
+    { capture: true }
+  );
 }
