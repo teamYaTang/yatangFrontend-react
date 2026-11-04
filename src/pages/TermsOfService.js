@@ -112,6 +112,8 @@ const TermsOfService = () => {
 
         <p className="legal-footer-note">
           관련 문서: <Link to="/privacy">개인정보 처리방침</Link>
+          {" · "}
+          <Link to="/credits">아이콘 출처</Link>
         </p>
       </article>
     </div>

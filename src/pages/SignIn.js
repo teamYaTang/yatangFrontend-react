@@ -197,6 +197,12 @@ const SignIn = () => {
           <button type="button" className="signin-legal-link" onClick={() => navigate("/terms")}>
             이용약관
           </button>
+          <span className="signin-legal-sep" aria-hidden>
+            ·
+          </span>
+          <button type="button" className="signin-legal-link" onClick={() => navigate("/credits")}>
+            아이콘 출처
+          </button>
         </p>
       </div>
 

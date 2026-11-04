@@ -16,9 +16,26 @@ html.cap-native body {
   -webkit-touch-callout: none;
 }
 
-html.cap-native * {
+html.cap-native *:not(button):not(input):not(textarea):not(select) {
   -webkit-user-select: none;
   user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/*
+ * iPad WKWebView는 button의 기본 글꼴로 한글이 깨진다.
+ * 부모 글꼴(Noto Sans KR)을 물려받고 네이티브 버튼 크롬을 끈다.
+ */
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
+}
+
+button {
+  -webkit-appearance: none;
+  appearance: none;
   -webkit-touch-callout: none;
 }
 

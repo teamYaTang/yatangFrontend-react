@@ -481,6 +481,13 @@ const Settings = () => {
                             >
                                 이용약관
                             </button>
+                            <button
+                                type="button"
+                                className="settings-legal-link"
+                                onClick={() => navigate("/credits")}
+                            >
+                                아이콘 출처
+                            </button>
                         </div>
                     </div>
 

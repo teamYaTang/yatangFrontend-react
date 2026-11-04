@@ -14,6 +14,7 @@ import Settings from "../pages/Settings";
 import OAuthCallback from "../pages/OAuthCallback";
 import PrivacyPolicy from "../pages/PrivacyPolicy";
 import TermsOfService from "../pages/TermsOfService";
+import IconCredits from "../pages/IconCredits";
 import MainShell from "../layouts/MainShell";
 
 export default function Router() {
@@ -27,6 +28,7 @@ export default function Router() {
         <Route path="/loading" element={<Loading />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/credits" element={<IconCredits />} />
 
         <Route element={<MainShell />}>
           <Route path="/" element={<Navigate to="/refrigerator" replace />} />

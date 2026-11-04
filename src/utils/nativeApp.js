@@ -21,7 +21,7 @@ export async function initNativeApp() {
 /** iOS 롱프레스 텍스트 선택 / 이미지 저장 콜아웃 차단 */
 function disableNativeCallouts() {
   const allowSelect = (el) =>
-    el?.closest?.("input, textarea, [contenteditable='true']");
+    el?.closest?.("input, textarea, button, select, [contenteditable='true']");
 
   const block = (e) => {
     if (allowSelect(e.target)) return;

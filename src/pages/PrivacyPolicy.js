@@ -157,6 +157,8 @@ const PrivacyPolicy = () => {
 
         <p className="legal-footer-note">
           관련 문서: <Link to="/terms">이용약관</Link>
+          {" · "}
+          <Link to="/credits">아이콘 출처</Link>
         </p>
       </article>
     </div>
