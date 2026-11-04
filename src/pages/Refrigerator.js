@@ -687,7 +687,7 @@ const Refrigerator = () => {
         </div>
       </div>
 
-      {typeof document !== "undefined"
+      {!detailItem && typeof document !== "undefined"
         ? createPortal(
             <button type="button" className="fridge-add-fab" onClick={goIngredientAdd}>
               재료추가
